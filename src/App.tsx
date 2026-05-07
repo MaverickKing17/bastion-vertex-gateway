@@ -94,12 +94,22 @@ const STATS = [
   { title: 'Incidents', value: '7', sub: '', trend: -2, status: 'Open', icon: FileText, trendColor: 'text-teal-400' },
 ];
 
-const NAV_ITEMS = [
-  { icon: LayoutDashboard, label: 'Dashboard', active: true, id: 'overview' },
+// Role-Based Access Control Definitions
+type ViewId = 'overview' | 'investigation' | 'inventory' | 'guardrails' | 'compliance';
+type UserRole = 'Administrator' | 'Analyst' | 'Executive';
+
+const ROLE_PERMISSIONS: Record<UserRole, (ViewId | 'kill-switch')[]> = {
+  Administrator: ['overview', 'investigation', 'inventory', 'guardrails', 'compliance', 'kill-switch'],
+  Analyst: ['overview', 'investigation', 'inventory'],
+  Executive: ['overview', 'inventory', 'compliance'],
+};
+
+const NAV_ITEMS: { icon: any, label: string, id: ViewId }[] = [
+  { icon: LayoutDashboard, label: 'Dashboard', id: 'overview' },
   { icon: Search, label: 'Investigations', id: 'investigation' },
   { icon: ShieldAlert, label: 'Risk Inventory', id: 'inventory' },
-  { icon: Cpu, label: 'Model Guardrails' },
-  { icon: FileText, label: 'Compliance' },
+  { icon: Cpu, label: 'Model Guardrails', id: 'guardrails' },
+  { icon: FileText, label: 'Compliance', id: 'compliance' },
 ];
 
 const DETAILED_ASSETS = [
@@ -155,7 +165,7 @@ const StatCard = ({ title, value, sub, trend, status, icon: Icon, trendColor }: 
   </div>
 );
 
-const Sidebar = ({ activeTab, onTabChange }: { activeTab: string, onTabChange: (id: string) => void }) => (
+const Sidebar = ({ activeTab, onTabChange, userRole }: { activeTab: string, onTabChange: (id: string) => void, userRole: UserRole }) => (
   <aside className="w-64 bg-slate-900/50 border-r border-slate-800 flex flex-col h-screen sticky top-0 hidden lg:flex">
     <div className="p-6 flex items-center gap-3">
       <div className="w-8 h-8 bg-gradient-to-tr from-teal-500 to-cyan-400 rounded-lg flex items-center justify-center shadow-lg shadow-teal-500/20">
@@ -165,22 +175,27 @@ const Sidebar = ({ activeTab, onTabChange }: { activeTab: string, onTabChange: (
     </div>
 
     <nav className="flex-1 px-4 py-8 space-y-1">
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.label}
-          onClick={() => item.id && onTabChange(item.id as any)}
-          className={cn(
-            "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium",
-            (item.id === activeTab || (item.active && activeTab === 'overview')) 
-              ? "text-teal-400 bg-teal-400/5" 
-              : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-          )}
-        >
-          <item.icon className={cn("w-4 h-4", (item.id === activeTab || (item.active && activeTab === 'overview')) ? "text-teal-400" : "text-slate-500")} />
-          {item.label}
-          {item.id === activeTab && <div className="ml-auto w-1 h-4 bg-teal-400 rounded-full shadow-[0_0_8px_rgba(45,212,191,0.5)]" />}
-        </button>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const hasPermission = ROLE_PERMISSIONS[userRole].includes(item.id);
+        if (!hasPermission) return null;
+        
+        return (
+          <button
+            key={item.label}
+            onClick={() => onTabChange(item.id)}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium",
+              item.id === activeTab
+                ? "text-teal-400 bg-teal-400/5" 
+                : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+            )}
+          >
+            <item.icon className={cn("w-4 h-4", item.id === activeTab ? "text-teal-400" : "text-slate-500")} />
+            {item.label}
+            {item.id === activeTab && <div className="ml-auto w-1 h-4 bg-teal-400 rounded-full shadow-[0_0_8px_rgba(45,212,191,0.5)]" />}
+          </button>
+        );
+      })}
     </nav>
 
     <div className="p-6 border-t border-slate-800">
@@ -198,9 +213,17 @@ const Sidebar = ({ activeTab, onTabChange }: { activeTab: string, onTabChange: (
 );
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'investigation' | 'inventory'>('overview');
+  const [activeTab, setActiveTab] = useState<ViewId>('overview');
+  const [userRole, setUserRole] = useState<UserRole>('Administrator');
   const [killSwitchActive, setKillSwitchActive] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    // If role switches and current tab is no longer allowed, redirect to overview
+    if (!ROLE_PERMISSIONS[userRole].includes(activeTab)) {
+      setActiveTab('overview');
+    }
+  }, [userRole]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -479,11 +502,139 @@ export default function App() {
     </motion.div>
   );
 
+  const GuardrailsView = () => (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+    >
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div className="space-y-2">
+          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Model Guardrails</h2>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Real-time policy enforcement for generative AI workloads</p>
+        </div>
+        <div className="flex gap-4">
+           <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-6">
+              <div>
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Active Policies</p>
+                <p className="text-lg font-light text-white">42</p>
+              </div>
+              <div className="h-8 w-px bg-slate-800" />
+              <div>
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Blocks (24h)</p>
+                <p className="text-lg font-light text-teal-400">1,248</p>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-8">
+        <div className="col-span-12 lg:col-span-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+            <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-8">System Instruction Integrity</h3>
+            <div className="space-y-6">
+              {[
+                { name: 'Prompt Injection Filter', status: 'Active', latency: '12ms', efficacy: '99.9%' },
+                { name: 'PII Scrubbing', status: 'Active', latency: '45ms', efficacy: '100%' },
+                { name: 'Toxicity Detection', status: 'Warning', latency: '18ms', efficacy: '94.2%' },
+                { name: 'Jailbreak Prevention', status: 'Active', latency: '22ms', efficacy: '99.7%' },
+              ].map((item) => (
+                <div key={item.name} className="flex items-center justify-between p-4 bg-slate-950/50 rounded-xl border border-slate-800/50">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("w-2 h-2 rounded-full shadow-[0_0_8px]", item.status === 'Active' ? 'bg-teal-400 shadow-teal-400/50' : 'bg-amber-400 shadow-amber-400/50')} />
+                    <div>
+                      <p className="text-xs font-bold text-slate-200">{item.name}</p>
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">{item.status}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-8 text-right">
+                    <div>
+                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Latency</p>
+                      <p className="text-xs font-mono text-slate-300">{item.latency}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Efficacy</p>
+                      <p className="text-xs font-mono text-teal-400">{item.efficacy}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="col-span-12 lg:col-span-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
+            <h3 className="text-white text-sm font-bold uppercase tracking-wider mb-8">Model Performance</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={RISK_SCORE_DATA}>
+                  <Area type="monotone" dataKey="score" stroke="#2dd4bf" fill="#2dd4bf" fillOpacity={0.1} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  const ComplianceView = () => (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+    >
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div className="space-y-2">
+          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Compliance Status</h2>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Cross-framework regulatory alignment monitoring</p>
+        </div>
+        <div className="flex gap-4">
+          <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-teal-400/30 transition-all">
+            <Archive className="w-3.5 h-3.5" /> Download Report
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          { name: 'ISO-27001', score: 100, status: 'Compliant', date: 'Exp: Dec 2025' },
+          { name: 'SOC2 Type II', score: 98, status: 'Compliant', date: 'Review: 12d' },
+          { name: 'GDPR / AI Act', score: 85, status: 'Warning', date: 'Audit Pending' },
+        ].map((framework) => (
+          <div key={framework.name} className="bg-slate-900 border border-slate-800 rounded-2xl p-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-3xl" />
+            <div className="flex justify-between items-start mb-6 relative z-10">
+              <h3 className="text-xl font-light text-white uppercase tracking-tight">{framework.name}</h3>
+              <CheckCircle2 className={cn("w-6 h-6", framework.status === 'Compliant' ? 'text-teal-400' : 'text-amber-400')} />
+            </div>
+            <div className="space-y-4 relative z-10">
+              <div className="flex justify-between items-end">
+                <span className="text-4xl font-light text-white">{framework.score}%</span>
+                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{framework.date}</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${framework.score}%` }}
+                  className={cn("h-full", framework.score === 100 ? 'bg-teal-400' : 'bg-amber-400')}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+
   const DynamicView = () => {
     switch (activeTab) {
       case 'investigation': return <IncidentInvestigationView />;
       case 'inventory': return <RiskInventoryView />;
+      case 'guardrails': return <GuardrailsView />;
+      case 'compliance': return <ComplianceView />;
       default: return (
+
         <motion.div 
           key="overview"
           initial={{ opacity: 0 }}
@@ -683,35 +834,44 @@ export default function App() {
             </div>
           </div>
 
-          {/* Bottom Power Status */}
-          <motion.div 
-            whileHover={{ scale: 1.005 }}
-            className="bg-slate-900 border border-rose-500/20 rounded-2xl p-10 flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden group shadow-2xl"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-rose-500/[0.03] to-transparent pointer-events-none" />
-            <div className="flex items-start gap-8 z-10">
-              <div className="bg-slate-950 border border-rose-500/10 p-5 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-700">
-                <Power className={cn("w-12 h-12 transition-all duration-700", killSwitchActive ? "text-white animate-pulse" : "text-rose-500/80")} />
+          {/* Bottom Power Status - Restricted to Administrator */}
+          {ROLE_PERMISSIONS[userRole].includes('kill-switch') ? (
+            <motion.div 
+              whileHover={{ scale: 1.005 }}
+              className="bg-slate-900 border border-rose-500/20 rounded-2xl p-10 flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden group shadow-2xl"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-rose-500/[0.03] to-transparent pointer-events-none" />
+              <div className="flex items-start gap-8 z-10">
+                <div className="bg-slate-950 border border-rose-500/10 p-5 rounded-2xl shadow-inner group-hover:scale-110 transition-all duration-700">
+                  <Power className={cn("w-12 h-12 transition-all duration-700", killSwitchActive ? "text-white animate-pulse" : "text-rose-500/80")} />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-light text-white uppercase tracking-tight leading-none">Enterprise Containment Protocol</h3>
+                  <p className="text-sm text-slate-500 max-w-2xl font-medium leading-relaxed">
+                    Instantly sever LLM gateway tunnels, rotate orchestration keys, and enforce read-only state for all monitored agents. <span className="text-rose-500/60">Authorization Level: Tier-1 Security Admin.</span>
+                  </p>
+                </div>
               </div>
-              <div className="space-y-3">
-                <h3 className="text-2xl font-light text-white uppercase tracking-tight leading-none">Enterprise Containment Protocol</h3>
-                <p className="text-sm text-slate-500 max-w-2xl font-medium leading-relaxed">
-                  Instantly sever LLM gateway tunnels, rotate orchestration keys, and enforce read-only state for all monitored agents. <span className="text-rose-500/60">Authorization Level: Tier-1 Security Admin.</span>
-                </p>
+              <button 
+                onClick={() => setKillSwitchActive(!killSwitchActive)}
+                className={cn(
+                  "px-16 py-7 rounded-2xl font-black uppercase tracking-[0.4em] text-[10px] transition-all duration-700 shadow-2xl z-10 min-w-[320px]",
+                  killSwitchActive 
+                    ? "bg-rose-500 text-white shadow-rose-500/30 ring-4 ring-rose-500/10 scale-105" 
+                    : "bg-slate-950 border-2 border-rose-500/20 text-rose-500/80 hover:border-rose-500 hover:text-white"
+                )}
+              >
+                {killSwitchActive ? 'CONTAINMENT ACTIVE' : 'ENGAGE KILL-SWITCH'}
+              </button>
+            </motion.div>
+          ) : (
+            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <Lock className="w-8 h-8 text-slate-700 mx-auto" />
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Administrative Containment Utilities - Access Denied</p>
               </div>
             </div>
-            <button 
-              onClick={() => setKillSwitchActive(!killSwitchActive)}
-              className={cn(
-                "px-16 py-7 rounded-2xl font-black uppercase tracking-[0.4em] text-[10px] transition-all duration-700 shadow-2xl z-10 min-w-[320px]",
-                killSwitchActive 
-                  ? "bg-rose-500 text-white shadow-rose-500/30 ring-4 ring-rose-500/10 scale-105" 
-                  : "bg-slate-950 border-2 border-rose-500/20 text-rose-500/80 hover:border-rose-500 hover:text-white"
-              )}
-            >
-              {killSwitchActive ? 'CONTAINMENT ACTIVE' : 'ENGAGE KILL-SWITCH'}
-            </button>
-          </motion.div>
+          )}
         </motion.div>
       );
     }
@@ -719,35 +879,54 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-200 overflow-hidden font-sans selection:bg-teal-400 selection:text-slate-950">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab as any} userRole={userRole} />
 
       <main className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
         {/* Top Header */}
         <header className="h-16 flex-none border-b border-slate-800 bg-slate-900/50 flex items-center justify-between px-8 backdrop-blur-md sticky top-0 z-50">
           <div className="flex items-center gap-4">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider transition-all">
-              {activeTab === 'overview' ? 'Operations Dashboard' : activeTab === 'inventory' ? 'Asset Inventory' : 'Incident Forensics'}
+              {activeTab === 'overview' ? 'Operations Dashboard' : 
+               activeTab === 'inventory' ? 'Asset Inventory' : 
+               activeTab === 'guardrails' ? 'Policy Guardrails' :
+               activeTab === 'compliance' ? 'Compliance Oversight' :
+               'Incident Forensics'}
             </h2>
             <div className="h-4 w-px bg-slate-800 hidden md:block" />
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest hidden md:block">
-              {activeTab === 'overview' ? 'System Health: Optimal' : activeTab === 'inventory' ? 'Inventory Scan: 100%' : 'Containment Active'}
-            </p>
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-lg border border-slate-700">
+               <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-none">Role:</span>
+               <select 
+                 value={userRole} 
+                 onChange={(e) => setUserRole(e.target.value as UserRole)}
+                 className="bg-transparent text-[9px] font-black text-teal-400 uppercase tracking-widest focus:outline-none cursor-pointer"
+               >
+                 <option value="Administrator" className="bg-slate-900">Administrator</option>
+                 <option value="Analyst" className="bg-slate-900">Analyst</option>
+                 <option value="Executive" className="bg-slate-900">Executive</option>
+               </select>
+            </div>
           </div>
 
           <div className="flex items-center gap-6">
             <div className="hidden lg:flex items-center gap-8 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
               <span onClick={() => setActiveTab('overview')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'overview' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Overview</span>
-              <span className="hover:text-slate-200 cursor-pointer py-5 transition-colors">Guardrails</span>
-              <span onClick={() => setActiveTab('inventory')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'inventory' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Risks</span>
+              {ROLE_PERMISSIONS[userRole].includes('guardrails') && (
+                <span onClick={() => setActiveTab('guardrails')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'guardrails' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Guardrails</span>
+              )}
+              {ROLE_PERMISSIONS[userRole].includes('inventory') && (
+                <span onClick={() => setActiveTab('inventory')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'inventory' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Risks</span>
+              )}
             </div>
             
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setActiveTab(activeTab === 'overview' ? 'investigation' : 'overview')}
-                className="flex items-center gap-2 bg-teal-400/10 border border-teal-400/30 text-teal-400 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-teal-400 hover:text-slate-950 transition-all active:scale-95"
-              >
-                {activeTab === 'overview' ? 'Live Audit' : 'Dashboard'}
-              </button>
+              {ROLE_PERMISSIONS[userRole].includes('investigation') && (
+                <button 
+                  onClick={() => setActiveTab(activeTab === 'overview' ? 'investigation' : 'overview')}
+                  className="flex items-center gap-2 bg-teal-400/10 border border-teal-400/30 text-teal-400 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-teal-400 hover:text-slate-950 transition-all active:scale-95"
+                >
+                  {activeTab === 'overview' ? 'Live Audit' : 'Dashboard'}
+                </button>
+              )}
               <div className="w-px h-6 bg-slate-800 mx-1" />
               <div className="relative">
                 <Bell className="w-4 h-4 text-slate-500 hover:text-white transition-colors cursor-pointer" />
