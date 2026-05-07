@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
+  ShieldCheck,
   Activity, 
   Lock, 
   Users, 
@@ -36,7 +37,11 @@ import {
   TrendingUp,
   Share2,
   Calendar,
-  Loader2
+  Loader2,
+  Download,
+  Crosshair,
+  Terminal,
+  Skull
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -220,29 +225,19 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ViewId>('overview');
   const [userRole, setUserRole] = useState<UserRole>('Administrator');
   const [killSwitchActive, setKillSwitchActive] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    // If role switches and current tab is no longer allowed, redirect to overview
+    // Role permissions check
     if (!ROLE_PERMISSIONS[userRole].includes(activeTab)) {
       setActiveTab('overview');
     }
-  }, [userRole]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  }, [userRole, activeTab]);
 
   const IncidentInvestigationView = () => {
     const [subTab, setSubTab] = useState('Audit Trail');
 
     return (
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-      >
+      <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
         <div className="flex items-center gap-4 text-slate-500 mb-2">
           <button onClick={() => setActiveTab('overview')} className="flex items-center gap-2 hover:text-teal-400 transition-colors text-[10px] font-black uppercase tracking-[0.2em]">
             <ChevronRight className="w-4 h-4 rotate-180" /> Forensic Overview
@@ -385,7 +380,7 @@ export default function App() {
              </div>
           )}
         </div>
-      </motion.div>
+      </div>
     );
   };
 
@@ -401,11 +396,7 @@ export default function App() {
     });
 
     return (
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-      >
+      <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
           <div className="space-y-2">
             <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Risk Inventory</h2>
@@ -536,16 +527,12 @@ export default function App() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   };
 
   const GuardrailsView = () => (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-    >
+    <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Model Guardrails</h2>
@@ -613,36 +600,92 @@ export default function App() {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 
 const THREAT_ALERTS = [
-  { id: 'T-992', severity: 'Critical', type: 'Prompt Injection', target: 'Llama-3-70b-Gateway', timestamp: '2m ago', desc: 'Direct prompt injection attempt targeting internal API keys via recursive token expansion.', status: 'Active', insights: ['Rotate API Gateway Keys', 'Enable strict token filtering', 'Quarantine session ID: 882-X'] },
-  { id: 'T-985', severity: 'High', type: 'DDoS Pattern', target: 'CDN Edge Node (US-West)', timestamp: '14m ago', desc: 'Anomalous request volume detected from unverified botnet signatures reaching 45k req/s.', status: 'Mitigated', insights: ['Update WAF Rate Limits', 'Scrub ingress traffic at edge', 'Notify ISP of subnet origin'] },
-  { id: 'T-981', severity: 'Medium', type: 'Unauthorized Access', target: 'Azure AD (OIDC)', timestamp: '1h ago', desc: 'Successive login failures followed by successful entry from a blacklisted VPN subnet.', status: 'Investigating', insights: ['Force MFA reset for user', 'Validate session IP logs', 'Check for horizontal movement'] },
-  { id: 'T-977', severity: 'Low', type: 'Insecure Model Output', target: 'Internal Customer Support Chat', timestamp: '3h ago', desc: 'PII found in model response during routine batch auditing of support conversations.', status: 'Archived', insights: ['Update output guardrail regex', 'Redact history in database', 'Fine-tune PII filter threshold'] },
+  { 
+    id: 'T-992', 
+    severity: 'Critical', 
+    type: 'Prompt Injection', 
+    target: 'Llama-3-70b-Gateway', 
+    timestamp: '2m ago', 
+    desc: 'Direct prompt injection attempt targeting internal API keys via recursive token expansion.', 
+    status: 'Active', 
+    insights: ['Rotate API Gateway Keys', 'Enable strict token filtering', 'Quarantine session ID: 882-X'],
+    intel: {
+      actor: 'LUMINA_VOX',
+      campaign: 'Op-Silica',
+      iocs: ['45.122.9.10', 'malicious-prompt.hex', 'ua:Mozilla/5.0...Ghost'],
+      confidence: '94%'
+    }
+  },
+  { 
+    id: 'T-985', 
+    severity: 'High', 
+    type: 'DDoS Pattern', 
+    target: 'CDN Edge Node (US-West)', 
+    timestamp: '14m ago', 
+    desc: 'Anomalous request volume detected from unverified botnet signatures reaching 45k req/s.', 
+    status: 'Mitigated', 
+    insights: ['Update WAF Rate Limits', 'Scrub ingress traffic at edge', 'Notify ISP of subnet origin'],
+    intel: {
+      actor: 'BOTNET_MIRROR',
+      campaign: 'Edge-Flood-24',
+      iocs: ['1,200+ Node Cluster', 'AS-64496', 'UDP/53 Flooding'],
+      confidence: '88%'
+    }
+  },
+  { 
+    id: 'T-981', 
+    severity: 'Medium', 
+    type: 'Unauthorized Access', 
+    target: 'Azure AD (OIDC)', 
+    timestamp: '1h ago', 
+    desc: 'Successive login failures followed by successful entry from a blacklisted VPN subnet.', 
+    status: 'Investigating', 
+    insights: ['Force MFA reset for user', 'Validate session IP logs', 'Check for horizontal movement'],
+    intel: {
+      actor: 'SILVER_SPIDER',
+      campaign: 'Cloud-Identity-Harvest',
+      iocs: ['93.184.216.34', 'session_hijack_v2', 'OIDC_EXPLOIT_6b'],
+      confidence: '76%'
+    }
+  },
+  { 
+    id: 'T-977', 
+    severity: 'Low', 
+    type: 'Insecure Model Output', 
+    target: 'Internal Customer Support Chat', 
+    timestamp: '3h ago', 
+    desc: 'PII found in model response during routine batch auditing of support conversations.', 
+    status: 'Archived', 
+    insights: ['Update output guardrail regex', 'Redact history in database', 'Fine-tune PII filter threshold'],
+    intel: {
+      actor: 'N/A',
+      campaign: 'Internal Drift',
+      iocs: ['PII_LEAK_REGEX_04', 'MODEL_VERSION_ALPHA'],
+      confidence: '100%'
+    }
+  },
 ];
 
-const ThreatDetectionView = () => {
-  const [selectedAlert, setSelectedAlert] = useState(THREAT_ALERTS[0]);
-  const [triageStage, setTriageStage] = useState<'Detection' | 'Analysis' | 'Response'>('Detection');
-  const [isAutomating, setIsAutomating] = useState(false);
+  const ThreatDetectionView = () => {
+    const [selectedAlert, setSelectedAlert] = useState(THREAT_ALERTS[0]);
+    const [triageStage, setTriageStage] = useState<'Detection' | 'Analysis' | 'Response'>('Detection');
+    const [isAutomating, setIsAutomating] = useState(false);
 
-  const handleAutomate = () => {
-    setIsAutomating(true);
-    setTimeout(() => {
-      setIsAutomating(false);
-      setTriageStage('Response');
-    }, 2000);
-  };
+    const handleAutomate = () => {
+      setIsAutomating(true);
+      setTimeout(() => {
+        setIsAutomating(false);
+        setTriageStage('Response');
+      }, 2000);
+    };
 
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-    >
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+    return (
+      <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Threat Detection Center</h2>
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">SOC-Aligned autonomous monitoring and incident triage</p>
@@ -662,6 +705,31 @@ const ThreatDetectionView = () => {
               </div>
               <p className="text-xl font-light text-teal-400">ON</p>
            </div>
+        </div>
+      </div>
+
+      {/* Global Intel Ticker */}
+      <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center gap-6 overflow-hidden relative group">
+        <div className="absolute inset-0 bg-gradient-to-r from-teal-400/[0.02] to-transparent pointer-events-none" />
+        <div className="flex items-center gap-2 shrink-0 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg">
+          <Globe className="w-3.5 h-3.5 text-teal-400" />
+          <span className="text-[9px] font-black text-white uppercase tracking-widest">Global Intel</span>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <div className="flex gap-12 animate-infinite-scroll whitespace-nowrap">
+            {[
+              "NEW CAMPAIGN: [Op-Silica] targeting LLM Gateways via recursive injection",
+              "THREAT ADVISORY: Silver_Spider observed leveraging OIDC hijack vectors",
+              "IOC UPDATE: 48 new IPs added to 'Blacklisted VPN' subnet list",
+              "SYSTEM ALERT: High-volume botnet activity detected in US-West regions",
+              "ZERO-DAY: Unverified RCE pattern detected in Bedrock execution environment"
+            ].map((text, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-rose-500/40" />
+                <span className="text-[10px] font-medium text-slate-400 tracking-wide uppercase">{text}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -811,7 +879,87 @@ const ThreatDetectionView = () => {
 
                 {triageStage === 'Analysis' && (
                   <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Enrichment & Correlation</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Enrichment & Correlation</h4>
+                      <div className="flex items-center gap-2 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                        <Activity className="w-3 h-3 text-rose-500" />
+                        <span className="text-[8px] font-black text-rose-500 uppercase tracking-widest">Live Intel Feed</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 border-dashed">
+                      <div className="flex items-center gap-3 mb-4">
+                        <Terminal className="w-4 h-4 text-teal-400" />
+                        <span className="text-[10px] text-white font-black uppercase tracking-widest">Forensic Hook Output</span>
+                        <div className="ml-auto flex gap-1">
+                          <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse" />
+                          <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse delay-75" />
+                          <div className="w-1 h-1 rounded-full bg-teal-400 animate-pulse delay-150" />
+                        </div>
+                      </div>
+                      <div className="text-[9px] font-mono text-slate-500 space-y-1 bg-slate-900/50 p-3 rounded-lg border border-slate-800/50">
+                        <p className="text-teal-400/70 opacity-50"># SOC_CORRELATION_V2_ACTIVE</p>
+                        <p>&gt; Fetching LLM execution trace...</p>
+                        <p>&gt; Correlating session {selectedAlert.id} with node US-EAST-1A...</p>
+                        <p>&gt; Cross-referencing {selectedAlert.intel?.actor} tactics...</p>
+                        <p>&gt; No horizontal movement detected in current enclave.</p>
+                      </div>
+                    </div>
+                    
+                    {/* Threat Intel Card */}
+                    <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl relative group">
+                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Skull className="w-12 h-12 text-rose-500" />
+                      </div>
+                      <div className="p-5 border-b border-slate-800/50 bg-slate-900/40">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-8 h-8 rounded-lg bg-rose-500/20 border border-rose-500/30 flex items-center justify-center">
+                            <Crosshair className="w-4 h-4 text-rose-500" />
+                          </div>
+                          <div>
+                            <p className="text-[8px] text-slate-500 font-black uppercase tracking-widest leading-none mb-1">Suspected Threat Actor</p>
+                            <h5 className="text-sm font-bold text-white tracking-tight leading-none">
+                              {selectedAlert.intel?.actor || 'UNKNOWN_ENTITY'}
+                            </h5>
+                          </div>
+                          {selectedAlert.intel?.confidence && (
+                            <div className="ml-auto text-right">
+                              <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">Confidence</p>
+                              <p className="text-xs font-mono text-teal-400">{selectedAlert.intel.confidence}</p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Active Campaign</p>
+                            <p className="text-[10px] font-bold text-slate-300">{selectedAlert.intel?.campaign || 'Ad-hoc Attack'}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Tactics (TTP)</p>
+                            <p className="text-[10px] font-bold text-slate-300 underline decoration-rose-500/30 decoration-wavy underline-offset-4">Execution, Persistence</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="p-5 space-y-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Fingerprint className="w-3 h-3 text-teal-400" />
+                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Indicators of Compromise (IOCs)</p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedAlert.intel?.iocs.map((ioc, idx) => (
+                              <div key={idx} className="bg-slate-900 border border-slate-800 px-2 py-1 rounded text-[9px] font-mono text-slate-400 flex items-center gap-2 hover:border-teal-500/50 transition-colors cursor-copy group/ioc">
+                                {ioc}
+                                <Terminal className="w-2.5 h-2.5 text-slate-700 group-hover/ioc:text-teal-400" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="space-y-3">
                       {[
                         { label: 'Identity Authenticity', score: 'Verified (mTLS)', color: 'text-teal-400' },
@@ -823,17 +971,6 @@ const ThreatDetectionView = () => {
                           <span className={cn("text-xs font-bold", item.color)}>{item.score}</span>
                         </div>
                       ))}
-                    </div>
-                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 border-dashed">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Activity className="w-4 h-4 text-teal-400" />
-                        <span className="text-[10px] text-white font-black uppercase tracking-widest">Forensic Hook Output</span>
-                      </div>
-                      <div className="text-[9px] font-mono text-slate-500 space-y-1">
-                        <p>&gt; Fetching LLM execution trace...</p>
-                        <p>&gt; Correlating session {selectedAlert.id} with gateway-02...</p>
-                        <p>&gt; No horizontal PII movement detected.</p>
-                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -885,7 +1022,7 @@ const ThreatDetectionView = () => {
           </AnimatePresence>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
@@ -899,17 +1036,13 @@ const DRIFT_DATA = [
   { time: '23:59', drift: 22, baseline: 18, alerts: 0 },
 ];
 
-const BehavioralDriftView = () => {
-  const [sensitivity, setSensitivity] = useState(65);
-  const [viewHistorical, setViewHistorical] = useState(false);
+  const BehavioralDriftView = () => {
+    const [sensitivity, setSensitivity] = useState(65);
+    const [viewHistorical, setViewHistorical] = useState(false);
 
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-    >
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+    return (
+      <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Behavioral Drift Analysis</h2>
           <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Monitoring systemic deviations from validated behavioral norms</p>
@@ -1064,11 +1197,11 @@ const BehavioralDriftView = () => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
-  const ReportingView = () => {
+const ReportingView = () => {
     const [dateRange, setDateRange] = useState('Last 7 Days');
     const [eventTypes, setEventTypes] = useState<string[]>(['Malware', 'Prompt Injection']);
     const [targetAssets, setTargetAssets] = useState('All Infrastructure');
@@ -1079,12 +1212,31 @@ const BehavioralDriftView = () => {
       );
     };
 
+    const eventLogs = [
+      { ts: '12:44:02', event: 'Malicious API Signature Match', src: 'Gateway-02', score: '99.4' },
+      { ts: '12:51:15', event: 'Prompt Injection Pattern Observed', src: 'Bedrock-01', score: '82.7' },
+      { ts: '13:05:55', event: 'Identity Session Token Rotated', src: 'Auth-Node', score: 'N/A' },
+      { ts: '14:22:10', event: 'Credential Spraying Attack Blocked', src: 'WAF-Alpha', score: '95.1' },
+    ];
+
+    const exportToCSV = () => {
+      const headers = ['Timestamp', 'Event', 'Source', 'Forensic Score'];
+      const csvContent = [
+        headers.join(','),
+        ...eventLogs.map(log => [log.ts, log.event, log.src, log.score].map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `security_report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
     return (
-      <motion.div 
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
-        className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-      >
+      <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
         <div className="flex flex-col md:flex-row justify-between items-end gap-6">
           <div className="space-y-2">
             <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Security Reporting</h2>
@@ -1094,7 +1246,10 @@ const BehavioralDriftView = () => {
             <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-teal-400 hover:text-white transition-all group">
               <FileText className="w-3.5 h-3.5" /> Export as PDF
             </button>
-            <button className="flex items-center gap-2 bg-teal-400 text-slate-950 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-teal-400/10 active:scale-95">
+            <button 
+              onClick={exportToCSV}
+              className="flex items-center gap-2 bg-teal-400 text-slate-950 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-teal-400/10 active:scale-95"
+            >
               <Archive className="w-3.5 h-3.5" /> Export CSV
             </button>
           </div>
@@ -1259,12 +1414,7 @@ const BehavioralDriftView = () => {
                 <div className="space-y-6">
                   <h5 className="text-[10px] font-black text-white uppercase tracking-[0.2em] border-b border-slate-800 pb-2">Significant Event Log Preview</h5>
                   <div className="bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
-                    {[
-                      { ts: '12:44:02', event: 'Malicious API Signature Match', src: 'Gateway-02', score: '99.4' },
-                      { ts: '12:51:15', event: 'Prompt Injection Pattern Observed', src: 'Bedrock-01', score: '82.7' },
-                      { ts: '13:05:55', event: 'Identity Session Token Rotated', src: 'Auth-Node', score: 'N/A' },
-                      { ts: '14:22:10', event: 'Credential Spraying Attack Blocked', src: 'WAF-Alpha', score: '95.1' },
-                    ].map((row, idx) => (
+                    {eventLogs.map((row, idx) => (
                       <div key={idx} className="flex items-center justify-between px-6 py-4 border-b border-slate-800/30 last:border-0 hover:bg-slate-950 transition-colors">
                         <div className="flex gap-6 items-center">
                           <span className="text-[9px] font-mono text-slate-600">{row.ts}</span>
@@ -1287,84 +1437,243 @@ const BehavioralDriftView = () => {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     );
   };
 
-  const ComplianceView = () => (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-    >
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-        <div className="space-y-2">
-          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Compliance Oversight</h2>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Monitoring OSFI, SOC2, and PIPEDA regulatory alignment</p>
-        </div>
-        <div className="flex gap-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-4">
-             <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Market Alignment:</span>
-             <span className="text-[10px] text-teal-400 font-black uppercase tracking-widest">Toronto / Canada Financial</span>
-          </div>
-          <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-teal-400/30 transition-all">
-            <Archive className="w-3.5 h-3.5" /> Regulatory Export
-          </button>
-        </div>
-      </div>
+  const ComplianceView = () => {
+    const [frameworks, setFrameworks] = useState([
+      { id: 'osfi', name: 'OSFI E-21', score: 94, status: 'Compliant', date: 'Exp: Dec 2025', desc: 'Operational Risk Management for AI' },
+      { id: 'soc2', name: 'SOC2 Type II', score: 98, status: 'Compliant', date: 'Review: 12d', desc: 'Trust Services Criteria: AI Workloads' },
+      { id: 'pipeda', name: 'PIPEDA / Bill C-27', score: 82, status: 'Warning', date: 'Audit Pending', desc: 'AI PII Protection & Data Sovereignty' },
+    ]);
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[
-          { name: 'OSFI E-21', score: 94, status: 'Compliant', date: 'Exp: Dec 2025', desc: 'Operational Risk Management for AI' },
-          { name: 'SOC2 Type II', score: 98, status: 'Compliant', date: 'Review: 12d', desc: 'Trust Services Criteria: AI Workloads' },
-          { name: 'PIPEDA / Bill C-27', score: 82, status: 'Warning', date: 'Audit Pending', desc: 'AI PII Protection & Data Sovereignty' },
-        ].map((framework) => (
-          <div key={framework.name} className="bg-slate-900 border border-slate-800 rounded-2xl p-8 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-3xl" />
-            <div className="flex justify-between items-start mb-4 relative z-10">
-              <div>
-                <h3 className="text-xl font-light text-white uppercase tracking-tight">{framework.name}</h3>
-                <p className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wide">{framework.desc}</p>
-              </div>
-              <CheckCircle2 className={cn("w-6 h-6", framework.status === 'Compliant' ? 'text-teal-400' : 'text-amber-400')} />
+    const [controls] = useState([
+      { id: 'C-01', name: 'AI Identity Governance', frameworkIds: ['soc2', 'osfi'], status: 'Active' },
+      { id: 'C-02', name: 'Prompt Filter Enforced', frameworkIds: ['pipeda'], status: 'Active' },
+      { id: 'C-03', name: 'Data Sovereignty Logic', frameworkIds: ['pipeda', 'osfi'], status: 'Review' },
+      { id: 'C-04', name: 'Model Output Auditing', frameworkIds: ['soc2'], status: 'Active' },
+    ]);
+
+    const [isAddingFramework, setIsAddingFramework] = useState(false);
+    const [newFrameworkName, setNewFrameworkName] = useState('');
+
+    const addFramework = () => {
+      if (!newFrameworkName) return;
+      const newFrame = {
+        id: `custom-${Date.now()}`,
+        name: newFrameworkName,
+        score: 0,
+        status: 'Unmapped',
+        date: 'Initial Build',
+        desc: 'Custom enterprise regulatory profile'
+      };
+      setFrameworks([...frameworks, newFrame]);
+      setNewFrameworkName('');
+      setIsAddingFramework(false);
+    };
+
+    const exportToCSV = () => {
+      const headers = ['Control ID', 'Account Element', 'Regulatory Alignment', 'Status'];
+      const rows = controls.map(control => {
+        const alignment = control.frameworkIds
+          .map(fId => frameworks.find(f => f.id === fId)?.name || 'Custom')
+          .join('; ');
+        return [control.id, control.name, alignment, control.status];
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `control_mapping_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    return (
+      <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full pb-20">
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Compliance Oversight</h2>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Monitoring OSFI, SOC2, and PIPEDA regulatory alignment</p>
+          </div>
+          <div className="flex gap-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-4">
+               <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Market Alignment:</span>
+               <span className="text-[10px] text-teal-400 font-black uppercase tracking-widest">Toronto / Canada Financial</span>
             </div>
-            <div className="space-y-4 relative z-10 pt-4">
-              <div className="flex justify-between items-end">
-                <span className="text-4xl font-light text-white">{framework.score}%</span>
-                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{framework.date}</span>
+            <button 
+              onClick={() => setIsAddingFramework(true)}
+              className="flex items-center gap-2 bg-teal-400 text-slate-950 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg shadow-teal-400/10"
+            >
+              <Layers className="w-3.5 h-3.5" /> Define Framework
+            </button>
+            <button 
+              onClick={exportToCSV}
+              className="flex items-center gap-2 bg-teal-400 text-slate-950 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-lg shadow-teal-400/10 active:scale-95"
+            >
+              <Archive className="w-3.5 h-3.5" /> Export CSV
+            </button>
+            <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-teal-400/30 transition-all">
+              <Archive className="w-3.5 h-3.5" /> Regulatory Export
+            </button>
+          </div>
+        </div>
+
+        {isAddingFramework && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="bg-slate-900 border border-teal-400/30 rounded-2xl p-6 overflow-hidden"
+          >
+            <h4 className="text-[10px] text-white font-black uppercase tracking-widest mb-4">Add Custom Compliance Profile</h4>
+            <div className="flex gap-4">
+              <input 
+                type="text" 
+                placeholder="REGULATORY PROFILE NAME (e.g. EU AI ACT)"
+                value={newFrameworkName}
+                onChange={(e) => setNewFrameworkName(e.target.value)}
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs text-white uppercase tracking-wider focus:border-teal-400 outline-none transition-all"
+              />
+              <button 
+                onClick={addFramework}
+                className="px-6 py-3 bg-teal-400 text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-widest"
+              >
+                Create Hub
+              </button>
+              <button 
+                onClick={() => setIsAddingFramework(false)}
+                className="px-6 py-3 bg-slate-800 text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Framework Readiness Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {frameworks.map((framework) => (
+            <div key={framework.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-8 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-3xl" />
+              <div className="flex justify-between items-start mb-4 relative z-10">
+                <div>
+                  <h3 className="text-xl font-light text-white uppercase tracking-tight">{framework.name}</h3>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wide">{framework.desc}</p>
+                </div>
+                <CheckCircle2 className={cn("w-6 h-6", framework.status === 'Compliant' ? 'text-teal-400' : 'text-amber-400')} />
               </div>
-              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${framework.score}%` }}
-                  className={cn("h-full", framework.score >= 90 ? 'bg-teal-400' : 'bg-amber-400')}
-                />
+              <div className="space-y-4 relative z-10 pt-4">
+                <div className="flex justify-between items-end">
+                  <span className="text-4xl font-light text-white">{framework.score}%</span>
+                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{framework.date}</span>
+                </div>
+                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${framework.score}%` }}
+                    className={cn("h-full", framework.score >= 90 ? 'bg-teal-400' : 'bg-amber-400')}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {controls.filter(c => c.frameworkIds.includes(framework.id)).map(c => (
+                    <span key={c.id} className="text-[8px] font-black px-2 py-0.5 bg-slate-950 border border-slate-800 text-slate-500 rounded uppercase tracking-tighter">
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
               </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Control Mapping Nexus */}
+        <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="p-8 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center">
+            <div className="space-y-1">
+              <h3 className="text-xl font-light text-white uppercase tracking-tight">Control Mapping Nexus</h3>
+              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Map AI guardrails to regional regulatory principles</p>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] font-black text-slate-600 uppercase tracking-widest">
+               <span>Total Active Controls: {controls.length}</span>
             </div>
           </div>
-        ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] bg-slate-950/80 border-b border-slate-800">
+                <tr>
+                  <th className="px-8 py-5">Security Control Element</th>
+                  <th className="px-8 py-5">Regulatory Alignment</th>
+                  <th className="px-8 py-5">Status</th>
+                  <th className="px-8 py-5 text-right">Audit Hook</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/30">
+                {controls.map((control) => (
+                  <tr key={control.id} className="hover:bg-slate-800/20 transition-all group">
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center text-slate-600 group-hover:text-teal-400 group-hover:border-teal-400/30 transition-all">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-200">{control.name}</p>
+                          <p className="text-[9px] font-mono text-slate-600 uppercase tracking-tighter mt-1">{control.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-wrap gap-2">
+                        {control.frameworkIds.map(fId => (
+                          <span key={fId} className="px-2 py-0.5 bg-teal-400/5 border border-teal-400/20 text-teal-400 text-[8px] font-black uppercase tracking-widest rounded shadow-sm">
+                            {(frameworks.find(f => f.id === fId)?.name || 'Custom').split(' ')[0]}
+                          </span>
+                        ))}
+                        <button className="w-5 h-5 rounded border border-dashed border-slate-700 flex items-center justify-center text-slate-600 hover:text-white hover:border-slate-500 transition-all">
+                          +
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className={cn(
+                        "px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.15em]",
+                        control.status === 'Active' ? "bg-teal-400/10 text-teal-400" : "bg-amber-400/10 text-amber-400"
+                      )}>
+                        {control.status}
+                      </span>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button className="text-slate-600 hover:text-white transition-colors">
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </motion.div>
-  );
+    );
+  };
 
   const DynamicView = () => {
     switch (activeTab) {
       case 'threats': return <ThreatDetectionView />;
       case 'drift': return <BehavioralDriftView />;
-      case 'investigation': return <IncidentInvestigationView />;
+      case 'investigation': return <IncidentInvestigationView setActiveTab={setActiveTab} />;
       case 'inventory': return <RiskInventoryView />;
       case 'guardrails': return <GuardrailsView />;
       case 'compliance': return <ComplianceView />;
       case 'reporting': return <ReportingView />;
       default: return (
-
-        <motion.div 
-          key="overview"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-        >
+        <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full">
           {/* Global Stats Grid - Refined 5 Column */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {STATS.map((stat, idx) => (
@@ -1595,7 +1904,7 @@ const BehavioralDriftView = () => {
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
       );
     }
   };
@@ -1672,25 +1981,73 @@ const BehavioralDriftView = () => {
         </header>
 
         <AnimatePresence mode="wait">
-          {DynamicView()}
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ 
+              duration: 0.15,
+              ease: "easeOut"
+            }}
+            className="flex-1"
+          >
+            {DynamicView()}
+          </motion.div>
         </AnimatePresence>
 
         {/* Status Bar Footer */}
-        <footer className="h-10 mt-auto border-t border-slate-800 px-8 flex items-center justify-between text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 bg-slate-950">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.5)]"></div>
-              <span>System Status: Optimal</span>
+        <footer className="h-11 mt-auto border-t border-slate-800 px-8 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 bg-slate-950/80 backdrop-blur-md select-none">
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-3 group cursor-help">
+              <div className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-30"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-500"></span>
+              </div>
+              <span className="text-slate-300 group-hover:text-teal-400 transition-colors flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-500/70" />
+                SYSTEM STATUS: <span className="font-mono text-teal-400">NOMINAL</span>
+              </span>
             </div>
-            <span className="text-slate-800">|</span>
-            <span>Region: Canada Central (Toronto)</span>
-            <span className="text-slate-800">|</span>
-            <span>Latency: 32ms</span>
+            
+            <div className="flex items-center gap-2.5">
+              <div className="h-4 w-px bg-slate-800" />
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-slate-600" />
+                THROUGHPUT: <span className="font-mono text-slate-200">1.2<span className="text-slate-500 ml-0.5">GB/S</span></span>
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <div className="h-4 w-px bg-slate-800" />
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-slate-600" />
+                LATENCY: <span className="font-mono text-slate-200">18<span className="text-slate-500 ml-0.5">MS</span></span>
+              </span>
+            </div>
+
+            <div className="hidden xl:flex items-center gap-2.5">
+              <div className="h-4 w-px bg-slate-800" />
+              <span className="text-slate-500 flex items-center gap-1.5">
+                <Globe className="w-3.5 h-3.5 text-slate-600" />
+                NODE: <span className="font-mono text-slate-200">US-EAST-1A</span>
+              </span>
+            </div>
           </div>
-          <div className="flex gap-8">
-            <span className="hover:text-teal-400 cursor-pointer transition-colors">Forensic Vault</span>
-            <span className="hover:text-teal-400 cursor-pointer transition-colors">Strategic Hooks</span>
-            <span className="text-teal-400/80">Compliance: OSFI E-21</span>
+
+          <div className="flex items-center gap-10">
+            <div className="hidden lg:flex items-center gap-6 text-slate-500">
+              <span className="hover:text-teal-400 cursor-help transition-colors border-b border-transparent hover:border-teal-400/30 pb-0.5">SECURITY_ADVISORY</span>
+              <span className="hover:text-teal-400 cursor-help transition-colors border-b border-transparent hover:border-teal-400/30 pb-0.5">ISO_27001_v3</span>
+            </div>
+            
+            <div className="flex items-center gap-4 pl-8 border-l border-slate-800">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5 text-slate-600" />
+                <span className="font-mono text-slate-500">KERNEL: <span className="text-slate-300">v4.12-R</span></span>
+              </div>
+              <div className="w-1.5 h-1.5 rounded-full bg-teal-500/20 border border-teal-500/40" />
+            </div>
           </div>
         </footer>
       </main>
