@@ -87,28 +87,31 @@ const RISKY_IDENTITIES = [
 ];
 
 const STATS = [
-  { title: 'Overall Risk Score', value: '72', sub: '/100', trend: 8, status: 'High Risk', icon: Shield, trendColor: 'text-red-400' },
-  { title: 'Active Threats', value: '23', sub: '', trend: 5, status: 'Critical / High', icon: Zap, trendColor: 'text-red-400' },
-  { title: 'AI Guardrail Blocks', value: '1,248', sub: '', trend: 18, status: 'Total', icon: Lock, trendColor: 'text-teal-400' },
-  { title: 'Identities Monitored', value: '3,842', sub: '', trend: 6, status: 'Total', icon: Users, trendColor: 'text-teal-400' },
-  { title: 'Incidents', value: '7', sub: '', trend: -2, status: 'Open', icon: FileText, trendColor: 'text-teal-400' },
+  { title: 'AI Risk Index', value: '72', sub: '/100', trend: 8, status: 'High Risk', icon: Shield, trendColor: 'text-red-400' },
+  { title: 'Identity Score', value: '88', sub: '%', trend: 5, status: 'Governed', icon: Fingerprint, trendColor: 'text-teal-400' },
+  { title: 'AI Posture Drifts', value: '14', sub: '', trend: 18, status: 'Anomaly', icon: Activity, trendColor: 'text-rose-400' },
+  { title: 'Agent Identities', value: '3,842', sub: '', trend: 6, status: 'Monitored', icon: Users, trendColor: 'text-teal-400' },
+  { title: 'Open Incidents', value: '07', sub: '', trend: -2, status: 'In Triage', icon: FileText, trendColor: 'text-teal-400' },
 ];
 
 // Role-Based Access Control Definitions
-type ViewId = 'overview' | 'investigation' | 'inventory' | 'guardrails' | 'compliance';
+type ViewId = 'overview' | 'investigation' | 'inventory' | 'guardrails' | 'compliance' | 'reporting' | 'threats' | 'drift';
 type UserRole = 'Administrator' | 'Analyst' | 'Executive';
 
 const ROLE_PERMISSIONS: Record<UserRole, (ViewId | 'kill-switch')[]> = {
-  Administrator: ['overview', 'investigation', 'inventory', 'guardrails', 'compliance', 'kill-switch'],
-  Analyst: ['overview', 'investigation', 'inventory'],
-  Executive: ['overview', 'inventory', 'compliance'],
+  Administrator: ['overview', 'investigation', 'inventory', 'guardrails', 'compliance', 'reporting', 'threats', 'drift', 'kill-switch'],
+  Analyst: ['overview', 'investigation', 'inventory', 'reporting', 'threats', 'drift'],
+  Executive: ['overview', 'inventory', 'compliance', 'reporting', 'threats', 'drift'],
 };
 
 const NAV_ITEMS: { icon: any, label: string, id: ViewId }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', id: 'overview' },
+  { icon: ShieldAlert, label: 'Threat Hub', id: 'threats' },
+  { icon: Activity, label: 'Behavioral Drift', id: 'drift' },
   { icon: Search, label: 'Investigations', id: 'investigation' },
-  { icon: ShieldAlert, label: 'Risk Inventory', id: 'inventory' },
+  { icon: Database, label: 'Risk Inventory', id: 'inventory' },
   { icon: Cpu, label: 'Model Guardrails', id: 'guardrails' },
+  { icon: BarChart3, label: 'Reports', id: 'reporting' },
   { icon: FileText, label: 'Compliance', id: 'compliance' },
 ];
 
@@ -230,277 +233,311 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const IncidentInvestigationView = () => (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-    >
-      <div className="flex items-center gap-4 text-slate-500 mb-2">
-        <button onClick={() => setActiveTab('overview')} className="flex items-center gap-2 hover:text-teal-400 transition-colors text-[10px] font-black uppercase tracking-[0.2em]">
-          <ChevronRight className="w-4 h-4 rotate-180" /> Forensic Overview
-        </button>
-      </div>
+  const IncidentInvestigationView = () => {
+    const [subTab, setSubTab] = useState('Audit Trail');
 
-      <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-        <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Impossible Travel Detected</h2>
-            <span className="px-3 py-1 rounded-lg bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">Critical Alert</span>
-          </div>
-          <div className="flex flex-wrap gap-x-8 gap-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-            <p>ID: <span className="text-slate-300 font-mono">INC-2025-0518-1023</span></p>
-            <p>Detection: <span className="text-slate-300">May 18, 2025 10:23 AM</span></p>
-            <p>Status: <span className="text-teal-400">Response Active</span></p>
-          </div>
-        </div>
-        <div className="flex gap-4">
-          <button className="px-6 py-3 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-white hover:border-slate-700 transition-all active:scale-95">
-            Internal Notes
-          </button>
-          <button className="px-8 py-3 rounded-xl bg-teal-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-xl shadow-teal-400/10 active:scale-95">
-            Resolve Incident
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+      >
+        <div className="flex items-center gap-4 text-slate-500 mb-2">
+          <button onClick={() => setActiveTab('overview')} className="flex items-center gap-2 hover:text-teal-400 transition-colors text-[10px] font-black uppercase tracking-[0.2em]">
+            <ChevronRight className="w-4 h-4 rotate-180" /> Forensic Overview
           </button>
         </div>
-      </div>
 
-      <div className="flex gap-8 border-b border-slate-800">
-        {['Summary', 'Audit Trail', 'Connected Assets', 'Evidence Storage'].map((tab) => (
-          <button 
-            key={tab} 
-            className={cn(
-              "pb-6 text-[10px] font-black uppercase tracking-[0.25em] transition-all relative",
-              tab === 'Audit Trail' ? "text-teal-400" : "text-slate-500 hover:text-slate-300"
-            )}
-          >
-            {tab}
-            {tab === 'Audit Trail' && <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-400 shadow-[0_0_12px_rgba(45,212,191,0.5)]" />}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Timeline */}
-        <div className="lg:col-span-8 space-y-8">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 relative overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between mb-10">
-              <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Containment Timeline</h3>
-              <div className="bg-slate-950 p-1 rounded-lg border border-slate-800 flex text-[9px] font-black uppercase tracking-widest">
-                <span className="px-3 py-1 text-teal-400 bg-slate-800 rounded-md">Real-Time</span>
-                <span className="px-3 py-1 text-slate-500">History</span>
-              </div>
+        <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Impossible Travel Detected</h2>
+              <span className="px-3 py-1 rounded-lg bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">Critical Alert</span>
             </div>
-            <div className="space-y-12 relative">
-              <div className="absolute left-[19px] top-6 bottom-6 w-px bg-slate-800" />
-              {[
-                { time: '10:23:15 AM', event: 'Identity Breach Identified', desc: 'Impossible travel detected for service account: j.doe@acme.com', source: 'Entra Guard', icon: ShieldAlert, color: 'text-rose-500' },
-                { time: '10:23:18 AM', event: 'Log Ingestion Complete', desc: 'SaaS logs correlated across multi-region edge nodes', source: 'Kinesis Stream', icon: Archive, color: 'text-teal-400' },
-                { time: '10:23:22 AM', event: 'Response Orchestration', desc: 'Lambda trigger: Initiating automated tenant lockdown', source: 'AWS EventBridge', icon: Zap, color: 'text-amber-500' },
-                { time: '10:23:25 AM', event: 'Asset Isolation', desc: 'Ephemeral tokens revoked; IP address 203.0.113.45 blocked', source: 'WAF Policy', icon: Users, color: 'text-teal-400' },
-                { time: '10:23:28 AM', event: 'Guardrail Enforcement', desc: 'Amazon Bedrock guardrail set to "BLOCK ALL" for targeted PID', source: 'Bedrock Security', icon: Lock, color: 'text-teal-400' },
-              ].map((item, idx) => (
-                <div key={idx} className="flex gap-8 relative group">
-                  <div className={cn("w-10 h-10 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 z-10 group-hover:border-teal-400/50 transition-all duration-300 shadow-xl", item.color)}>
-                    <item.icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.time}</p>
-                      <span className="text-[10px] font-black uppercase text-slate-700 tracking-widest">{item.source}</span>
-                    </div>
-                    <div className="bg-slate-950/40 p-5 rounded-2xl border border-slate-800/30 hover:border-slate-700 hover:bg-slate-950/80 transition-all duration-300">
-                      <p className="text-sm font-bold text-slate-200 mb-1 tracking-tight">{item.event}</p>
-                      <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</p>
+            <div className="flex flex-wrap gap-x-8 gap-y-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              <p>ID: <span className="text-slate-300 font-mono">INC-2025-0518-1023</span></p>
+              <p>Detection: <span className="text-slate-300">May 18, 2025 10:23 AM</span></p>
+              <p>Status: <span className="text-teal-400">Response Active</span></p>
+            </div>
+          </div>
+          <div className="flex gap-4">
+            <button className="px-6 py-3 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:text-white hover:border-slate-700 transition-all active:scale-95">
+              Internal Notes
+            </button>
+            <button className="px-8 py-3 rounded-xl bg-teal-400 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-xl shadow-teal-400/10 active:scale-95">
+              Resolve Incident
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-8 border-b border-slate-800">
+          {['Summary', 'Audit Trail', 'Connected Assets', 'Evidence Storage'].map((tab) => (
+            <button 
+              key={tab} 
+              onClick={() => setSubTab(tab)}
+              className={cn(
+                "pb-6 text-[10px] font-black uppercase tracking-[0.25em] transition-all relative",
+                tab === subTab ? "text-teal-400" : "text-slate-500 hover:text-slate-300"
+              )}
+            >
+              {tab}
+              {tab === subTab && <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-400 shadow-[0_0_12px_rgba(45,212,191,0.5)]" />}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {subTab === 'Audit Trail' ? (
+            <>
+              {/* Timeline */}
+              <div className="lg:col-span-8 space-y-8">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 relative overflow-hidden shadow-sm">
+                  <div className="flex items-center justify-between mb-10">
+                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Containment Timeline</h3>
+                    <div className="bg-slate-950 p-1 rounded-lg border border-slate-800 flex text-[9px] font-black uppercase tracking-widest">
+                      <span className="px-3 py-1 text-teal-400 bg-slate-800 rounded-md">Real-Time</span>
+                      <span className="px-3 py-1 text-slate-500">History</span>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar Info */}
-        <div className="lg:col-span-4 space-y-8">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-sm">
-            <h3 className="text-[11px] font-black text-white mb-8 uppercase tracking-[0.2em]">Case Meta-Data</h3>
-            <div className="space-y-1">
-              {[
-                { label: 'Target ID', value: 'j.doe@acme.com', isMono: true },
-                { label: 'M_Score', value: '92.4', color: 'text-rose-500' },
-                { label: 'Vector', value: 'Session Hijacking' },
-                { label: 'Latency Burst', value: '840ms ↑' },
-                { label: 'Geo-Origin', value: 'London, UK' },
-                { label: 'Exit Node', value: 'Singapore, SG' },
-                { label: 'System', value: 'Microsoft Entra ID' },
-              ].map((row) => (
-                <div key={row.label} className="flex justify-between items-center py-4 border-b border-slate-800/50 last:border-0 group">
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest group-hover:text-slate-400 transition-colors">{row.label}</span>
-                  <span className={cn("text-xs font-bold text-slate-300", row.color, row.isMono && "font-mono")}>{row.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 flex flex-col items-center">
-            <h3 className="text-[11px] font-black text-white mb-10 self-start uppercase tracking-[0.2em]">Task Completion</h3>
-            <div className="relative w-40 h-40 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90">
-                <circle cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-800" />
-                <motion.circle 
-                  initial={{ strokeDashoffset: 452 }}
-                  animate={{ strokeDashoffset: 0 }}
-                  transition={{ duration: 2, ease: "easeOut" }}
-                  cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-teal-400" strokeDasharray="452" 
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-light text-white tracking-tighter">100</span>
-                <span className="text-[10px] text-teal-400 font-black uppercase tracking-[0.2em] mt-2">Verified</span>
-              </div>
-            </div>
-            <div className="mt-10 w-full text-center space-y-4">
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
-                Response playbook automated execution is complete. All systems are in containment mode.
-              </p>
-              <button className="w-full py-3 rounded-xl border border-teal-400/20 text-[10px] font-black text-teal-400 uppercase tracking-widest hover:bg-teal-400/10 transition-all">
-                Export Audit Report
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-
-  const RiskInventoryView = () => (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
-    >
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-        <div className="space-y-2">
-          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Risk Inventory</h2>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Full visibility into system vulnerabilities and exposures</p>
-        </div>
-        <div className="flex gap-4">
-           <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-6">
-              <div>
-                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Monitored Assets</p>
-                <p className="text-lg font-light text-white">12,842</p>
-              </div>
-              <div className="h-8 w-px bg-slate-800" />
-              <div>
-                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Unmitigated Risks</p>
-                <p className="text-lg font-light text-rose-500">234</p>
-              </div>
-           </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-12">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-             <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50 backdrop-blur-sm sticky top-0 z-20">
-                <div className="flex items-center gap-4">
-                   <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
-                      <input 
-                        type="text" 
-                        placeholder="SEARCH ASSETS..." 
-                        className="bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-[10px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-teal-400/50 transition-all w-64 uppercase tracking-widest"
-                      />
-                   </div>
-                   <div className="h-8 w-px bg-slate-800" />
-                   <div className="flex gap-2">
-                      {['All', 'Critical', 'Identity', 'System'].map((filter) => (
-                        <button key={filter} className={cn("px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", filter === 'All' ? 'bg-teal-400 text-slate-950 font-black' : 'text-slate-500 hover:text-slate-300')}>
-                          {filter}
-                        </button>
-                      ))}
-                   </div>
-                </div>
-                <button className="flex items-center gap-2 text-[10px] font-black text-teal-400 uppercase tracking-widest hover:text-white transition-colors">
-                  <ExternalLink className="w-3 h-3" /> Export Inventory
-                </button>
-             </div>
-
-             <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="text-[10px] uppercase font-black tracking-widest text-slate-500 bg-slate-950 border-b border-slate-800">
-                    <tr>
-                      <th className="px-6 py-5">Asset Entity</th>
-                      <th className="px-6 py-5">Type / Owner</th>
-                      <th className="px-6 py-5">Risk Posture</th>
-                      <th className="px-6 py-5">Vulnerabilities</th>
-                      <th className="px-6 py-5 text-right">Activity</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/50">
-                    {DETAILED_ASSETS.map((asset) => (
-                      <tr key={asset.id} className="hover:bg-slate-800/30 transition-all cursor-default group">
-                        <td className="px-6 py-6">
-                           <div className="flex items-center gap-4">
-                             <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center group-hover:border-teal-400/30 transition-all">
-                                <asset.icon className="w-5 h-5 text-slate-600 group-hover:text-teal-400" />
-                             </div>
-                             <div>
-                                <p className="text-sm font-bold text-slate-200 tracking-tight">{asset.name}</p>
-                                <p className="text-[10px] font-mono text-slate-600 uppercase tracking-tighter mt-1">{asset.id}</p>
-                             </div>
-                           </div>
-                        </td>
-                        <td className="px-6 py-6 font-medium">
-                           <p className="text-[10px] text-slate-300 font-black uppercase tracking-wider">{asset.type}</p>
-                           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">{asset.owner}</p>
-                        </td>
-                        <td className="px-6 py-6">
-                           <div className="space-y-2">
-                             <div className="flex items-center justify-between w-32">
-                                <span className={cn("text-[10px] font-black uppercase tracking-[0.15em]", asset.score > 80 ? 'text-rose-500' : 'text-teal-400')}>{asset.score} Score</span>
-                                <RiskBadge score={asset.score} />
-                             </div>
-                             <div className="h-1.5 w-32 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${asset.score}%` }}
-                                  className={cn("h-full", asset.score > 80 ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : asset.score > 60 ? 'bg-amber-400' : 'bg-teal-400')} 
-                                />
-                             </div>
-                           </div>
-                        </td>
-                        <td className="px-6 py-6">
-                           <div className="flex items-center gap-4">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Violations</span>
-                                <span className="text-sm font-bold text-slate-200 mt-1">{asset.threats}</span>
-                              </div>
-                              <div className="h-6 w-px bg-slate-800" />
-                              <div className="flex flex-col">
-                                <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">CVE Fixes</span>
-                                <span className="text-sm font-bold text-slate-200 mt-1">{asset.vulnerabilities}</span>
-                              </div>
-                           </div>
-                        </td>
-                        <td className="px-6 py-6 text-right">
-                           <div className="h-8 w-24 ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
-                              <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={[{v:10},{v:25},{v:15},{v:30},{v:20},{v:40}]}>
-                                  <Line type="monotone" dataKey="v" stroke={asset.score > 80 ? '#f43f5e' : '#2dd4bf'} strokeWidth={2} dot={false} />
-                                </LineChart>
-                              </ResponsiveContainer>
-                           </div>
-                        </td>
-                      </tr>
+                  <div className="space-y-12 relative">
+                    <div className="absolute left-[19px] top-6 bottom-6 w-px bg-slate-800" />
+                    {[
+                      { time: '10:23:15 AM', event: 'Identity Breach Identified', desc: 'Impossible travel detected for service account: j.doe@acme.com', source: 'Entra Guard', icon: ShieldAlert, color: 'text-rose-500' },
+                      { time: '10:23:18 AM', event: 'Log Ingestion Complete', desc: 'SaaS logs correlated across multi-region edge nodes', source: 'Kinesis Stream', icon: Archive, color: 'text-teal-400' },
+                      { time: '10:23:22 AM', event: 'Response Orchestration', desc: 'Lambda trigger: Initiating automated tenant lockdown', source: 'AWS EventBridge', icon: Zap, color: 'text-amber-500' },
+                      { time: '10:23:25 AM', event: 'Asset Isolation', desc: 'Ephemeral tokens revoked; IP address 203.0.113.45 blocked', source: 'WAF Policy', icon: Users, color: 'text-teal-400' },
+                      { time: '10:23:28 AM', event: 'Guardrail Enforcement', desc: 'Amazon Bedrock guardrail set to "BLOCK ALL" for targeted PID', source: 'Bedrock Security', icon: Lock, color: 'text-teal-400' },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex gap-8 relative group">
+                        <div className={cn("w-10 h-10 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 z-10 group-hover:border-teal-400/50 transition-all duration-300 shadow-xl", item.color)}>
+                          <item.icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{item.time}</p>
+                            <span className="text-[10px] font-black uppercase text-slate-700 tracking-widest">{item.source}</span>
+                          </div>
+                          <div className="bg-slate-950/40 p-5 rounded-2xl border border-slate-800/30 hover:border-slate-700 hover:bg-slate-950/80 transition-all duration-300">
+                            <p className="text-sm font-bold text-slate-200 mb-1 tracking-tight">{item.event}</p>
+                            <p className="text-xs text-slate-500 leading-relaxed font-medium">{item.desc}</p>
+                          </div>
+                        </div>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar Info */}
+              <div className="lg:col-span-4 space-y-8">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-sm">
+                  <h3 className="text-[11px] font-black text-white mb-8 uppercase tracking-[0.2em]">Case Meta-Data</h3>
+                  <div className="space-y-1">
+                    {[
+                      { label: 'Target ID', value: 'j.doe@acme.com', isMono: true },
+                      { label: 'M_Score', value: '92.4', color: 'text-rose-500' },
+                      { label: 'Vector', value: 'Session Hijacking' },
+                      { label: 'Latency Burst', value: '840ms ↑' },
+                      { label: 'Geo-Origin', value: 'London, UK' },
+                      { label: 'Exit Node', value: 'Singapore, SG' },
+                      { label: 'System', value: 'Microsoft Entra ID' },
+                    ].map((row) => (
+                      <div key={row.label} className="flex justify-between items-center py-4 border-b border-slate-800/50 last:border-0 group">
+                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest group-hover:text-slate-400 transition-colors">{row.label}</span>
+                        <span className={cn("text-xs font-bold text-slate-300", row.color, row.isMono && "font-mono")}>{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 flex flex-col items-center">
+                  <h3 className="text-[11px] font-black text-white mb-10 self-start uppercase tracking-[0.2em]">Task Completion</h3>
+                  <div className="relative w-40 h-40 flex items-center justify-center">
+                    <svg className="w-full h-full -rotate-90">
+                      <circle cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-slate-800" />
+                      <motion.circle 
+                        initial={{ strokeDashoffset: 452 }}
+                        animate={{ strokeDashoffset: 0 }}
+                        transition={{ duration: 2, ease: "easeOut" }}
+                        cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-teal-400" strokeDasharray="452" 
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-5xl font-light text-white tracking-tighter">100</span>
+                      <span className="text-[10px] text-teal-400 font-black uppercase tracking-[0.2em] mt-2">Verified</span>
+                    </div>
+                  </div>
+                  <div className="mt-10 w-full text-center space-y-4">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
+                      Response playbook automated execution is complete. All systems are in containment mode.
+                    </p>
+                    <button className="w-full py-3 rounded-xl border border-teal-400/20 text-[10px] font-black text-teal-400 uppercase tracking-widest hover:bg-teal-400/10 transition-all">
+                      Export Audit Report
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+             <div className="col-span-12 h-64 bg-slate-900/50 border border-slate-800 border-dashed rounded-2xl flex items-center justify-center text-slate-500 uppercase tracking-widest font-black text-[10px]">
+                Detailed {subTab} View Under Development
+             </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  const RiskInventoryView = () => {
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredAssets = DETAILED_ASSETS.filter(asset => {
+      const matchesSearch = asset.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           asset.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = activeFilter === 'All' || asset.type.includes(activeFilter) || (activeFilter === 'Critical' && asset.score > 80);
+      return matchesSearch && matchesFilter;
+    });
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+      >
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Risk Inventory</h2>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Full visibility into system vulnerabilities and exposures</p>
+          </div>
+          <div className="flex gap-4">
+             <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-6">
+                <div>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Monitored Assets</p>
+                  <p className="text-lg font-light text-white">12,842</p>
+                </div>
+                <div className="h-8 w-px bg-slate-800" />
+                <div>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Unmitigated Risks</p>
+                  <p className="text-lg font-light text-rose-500">234</p>
+                </div>
              </div>
           </div>
         </div>
-      </div>
-    </motion.div>
-  );
+
+        <div className="grid grid-cols-12 gap-8">
+          <div className="col-span-12 lg:col-span-12">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+               <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50 backdrop-blur-sm sticky top-0 z-20">
+                  <div className="flex items-center gap-4">
+                     <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600" />
+                        <input 
+                          type="text" 
+                          placeholder="SEARCH ASSETS..." 
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-[10px] font-bold text-white placeholder:text-slate-700 focus:outline-none focus:border-teal-400/50 transition-all w-64 uppercase tracking-widest"
+                        />
+                     </div>
+                     <div className="h-8 w-px bg-slate-800" />
+                     <div className="flex gap-2">
+                        {['All', 'Critical', 'Identity', 'System'].map((filter) => (
+                          <button 
+                            key={filter} 
+                            onClick={() => setActiveFilter(filter)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", 
+                              activeFilter === filter ? 'bg-teal-400 text-slate-950 font-black' : 'text-slate-500 hover:text-slate-300'
+                            )}
+                          >
+                            {filter}
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+                  <button className="flex items-center gap-2 text-[10px] font-black text-teal-400 uppercase tracking-widest hover:text-white transition-colors">
+                    <ExternalLink className="w-3 h-3" /> Export Inventory
+                  </button>
+               </div>
+
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="text-[10px] uppercase font-black tracking-widest text-slate-500 bg-slate-950 border-b border-slate-800">
+                      <tr>
+                        <th className="px-6 py-5">Asset Entity</th>
+                        <th className="px-6 py-5">Type / Owner</th>
+                        <th className="px-6 py-5">Risk Posture</th>
+                        <th className="px-6 py-5">Vulnerabilities</th>
+                        <th className="px-6 py-5 text-right">Activity</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {filteredAssets.map((asset) => (
+                        <tr key={asset.id} className="hover:bg-slate-800/30 transition-all cursor-default group">
+                          <td className="px-6 py-6">
+                             <div className="flex items-center gap-4">
+                               <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center group-hover:border-teal-400/30 transition-all">
+                                  <asset.icon className="w-5 h-5 text-slate-600 group-hover:text-teal-400" />
+                               </div>
+                               <div>
+                                  <p className="text-sm font-bold text-slate-200 tracking-tight">{asset.name}</p>
+                                  <p className="text-[10px] font-mono text-slate-600 uppercase tracking-tighter mt-1">{asset.id}</p>
+                               </div>
+                             </div>
+                          </td>
+                          <td className="px-6 py-6 font-medium">
+                             <p className="text-[10px] text-slate-300 font-black uppercase tracking-wider">{asset.type}</p>
+                             <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1.5">{asset.owner}</p>
+                          </td>
+                          <td className="px-6 py-6">
+                             <div className="space-y-2">
+                               <div className="flex items-center justify-between w-32">
+                                  <span className={cn("text-[10px] font-black uppercase tracking-[0.15em]", asset.score > 80 ? 'text-rose-500' : 'text-teal-400')}>{asset.score} Score</span>
+                                  <RiskBadge score={asset.score} />
+                               </div>
+                               <div className="h-1.5 w-32 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${asset.score}%` }}
+                                    className={cn("h-full", asset.score > 80 ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : asset.score > 60 ? 'bg-amber-400' : 'bg-teal-400')} 
+                                  />
+                               </div>
+                             </div>
+                          </td>
+                          <td className="px-6 py-6">
+                             <div className="flex items-center gap-4">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Violations</span>
+                                  <span className="text-sm font-bold text-slate-200 mt-1">{asset.threats}</span>
+                                </div>
+                                <div className="h-6 w-px bg-slate-800" />
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">CVE Fixes</span>
+                                  <span className="text-sm font-bold text-slate-200 mt-1">{asset.vulnerabilities}</span>
+                                </div>
+                             </div>
+                          </td>
+                          <td className="px-6 py-6 text-right">
+                             <div className="h-8 w-24 ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <LineChart data={[{v:10},{v:25},{v:15},{v:30},{v:20},{v:40}]}>
+                                    <Line type="monotone" dataKey="v" stroke={asset.score > 80 ? '#f43f5e' : '#2dd4bf'} strokeWidth={2} dot={false} />
+                                  </LineChart>
+                                </ResponsiveContainer>
+                             </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+               </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   const GuardrailsView = () => (
     <motion.div 
@@ -578,6 +615,593 @@ export default function App() {
     </motion.div>
   );
 
+const THREAT_ALERTS = [
+  { id: 'T-992', severity: 'Critical', type: 'Prompt Injection', target: 'Llama-3-70b-Gateway', timestamp: '2m ago', desc: 'Direct prompt injection attempt targeting internal API keys via recursive token expansion.', status: 'Active', insights: ['Rotate API Gateway Keys', 'Enable strict token filtering', 'Quarantine session ID: 882-X'] },
+  { id: 'T-985', severity: 'High', type: 'DDoS Pattern', target: 'CDN Edge Node (US-West)', timestamp: '14m ago', desc: 'Anomalous request volume detected from unverified botnet signatures reaching 45k req/s.', status: 'Mitigated', insights: ['Update WAF Rate Limits', 'Scrub ingress traffic at edge', 'Notify ISP of subnet origin'] },
+  { id: 'T-981', severity: 'Medium', type: 'Unauthorized Access', target: 'Azure AD (OIDC)', timestamp: '1h ago', desc: 'Successive login failures followed by successful entry from a blacklisted VPN subnet.', status: 'Investigating', insights: ['Force MFA reset for user', 'Validate session IP logs', 'Check for horizontal movement'] },
+  { id: 'T-977', severity: 'Low', type: 'Insecure Model Output', target: 'Internal Customer Support Chat', timestamp: '3h ago', desc: 'PII found in model response during routine batch auditing of support conversations.', status: 'Archived', insights: ['Update output guardrail regex', 'Redact history in database', 'Fine-tune PII filter threshold'] },
+];
+
+const ThreatDetectionView = () => {
+  const [selectedAlert, setSelectedAlert] = useState(THREAT_ALERTS[0]);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+    >
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div className="space-y-2">
+          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Threat Detection Center</h2>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Real-time autonomous monitoring and incident categorization</p>
+        </div>
+        <div className="flex gap-3">
+           <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-2.5 flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Active Alerts</span>
+              </div>
+              <p className="text-xl font-light text-white">04</p>
+           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-8">
+        {/* Alert Feed */}
+        <div className="col-span-12 lg:col-span-12 xl:col-span-7 space-y-4 h-[700px] overflow-y-auto scrollbar-hide pr-2">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Live Threat Stream</h3>
+            <div className="flex gap-4 text-[9px] font-black text-slate-600 uppercase tracking-widest">
+              <span>Sort: Priority</span>
+              <span>Filter: All</span>
+            </div>
+          </div>
+
+          {THREAT_ALERTS.map((alert) => (
+            <motion.div 
+              key={alert.id}
+              onClick={() => setSelectedAlert(alert)}
+              whileHover={{ x: 4 }}
+              className={cn(
+                "p-6 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden",
+                selectedAlert.id === alert.id 
+                  ? "bg-slate-900 border-teal-400/50 shadow-2xl shadow-teal-400/5" 
+                  : "bg-slate-900/40 border-slate-800 hover:border-slate-700"
+              )}
+            >
+              <div className="flex items-start justify-between relative z-10">
+                <div className="flex gap-6">
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center border shrink-0 transition-transform group-hover:scale-110",
+                    alert.severity === 'Critical' ? "bg-rose-500/10 border-rose-500/30 text-rose-500" :
+                    alert.severity === 'High' ? "bg-amber-500/10 border-amber-500/30 text-amber-500" :
+                    "bg-teal-400/10 border-teal-400/30 text-teal-400"
+                  )}>
+                    {alert.severity === 'Critical' ? <ShieldAlert className="w-6 h-6" /> : <Zap className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h4 className="text-lg font-bold text-slate-100 tracking-tight leading-none">{alert.type}</h4>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border",
+                        alert.severity === 'Critical' ? "bg-rose-500/10 text-rose-500 border-rose-500/20" :
+                        alert.severity === 'High' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                        "bg-teal-400/10 text-teal-400 border-teal-400/20"
+                      )}>{alert.severity}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium leading-relaxed max-w-md line-clamp-1">{alert.desc}</p>
+                    <div className="flex items-center gap-4 mt-3">
+                      <span className="text-[9px] font-mono text-slate-600 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">{alert.id}</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5 line-clamp-1">
+                        <Globe className="w-3 h-3" /> {alert.target}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest">{alert.timestamp}</p>
+                  <p className={cn(
+                    "text-[10px] font-black uppercase tracking-widest mt-1",
+                    alert.status === 'Active' ? 'text-rose-500' : 
+                    alert.status === 'Mitigated' ? 'text-teal-400' : 'text-amber-500'
+                  )}>{alert.status}</p>
+                </div>
+              </div>
+              {selectedAlert.id === alert.id && (
+                <motion.div 
+                  layoutId="activeGlow"
+                  className="absolute inset-0 bg-gradient-to-r from-teal-400/[0.03] to-transparent pointer-events-none" 
+                />
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Action Panel */}
+        <div className="col-span-12 xl:col-span-5 h-[700px]">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={selectedAlert.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl h-full flex flex-col shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-teal-400/[0.02] to-transparent pointer-events-none" />
+              
+              <div className="p-10 border-b border-slate-800/50 relative z-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-teal-400 font-black uppercase tracking-[0.25em]">Actionable Insights</p>
+                    <h3 className="text-2xl font-light text-white tracking-tight leading-tight uppercase">Forensic Analysis</h3>
+                  </div>
+                  <button className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-500 hover:text-white transition-colors">
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="bg-slate-950/50 rounded-2xl border border-slate-800/80 p-6 space-y-4">
+                  <p className="text-xs text-slate-400 leading-relaxed italic font-medium">"{selectedAlert.desc}"</p>
+                </div>
+              </div>
+
+              <div className="flex-1 p-10 space-y-10 overflow-y-auto scrollbar-hide relative z-10">
+                <div className="space-y-6">
+                  <h5 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Archive className="w-3.5 h-3.5 text-teal-400" /> Response Playbook
+                  </h5>
+                  <div className="space-y-3">
+                    {selectedAlert.insights.map((step, idx) => (
+                      <motion.div 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        key={idx} 
+                        className="flex items-center gap-4 p-4 bg-slate-950/40 border border-slate-800/50 rounded-xl group hover:border-teal-400/30 transition-all"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-teal-400/5 border border-teal-400/20 flex items-center justify-center text-[10px] font-black text-teal-400 group-hover:bg-teal-400 group-hover:text-slate-950 transition-all">
+                          {idx + 1}
+                        </div>
+                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">{step}</span>
+                        <ChevronRight className="w-3 h-3 text-slate-700 ml-auto group-hover:text-teal-400 transition-colors" />
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-px bg-slate-800" />
+
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Blast Radius</p>
+                    <div className="text-xl font-light text-white tracking-tight">Limited to Node_04</div>
+                  </div>
+                  <div className="space-y-3">
+                    <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Mean Time to Detection</p>
+                    <div className="text-xl font-light text-teal-400 tracking-tight">1.2 seconds</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 bg-slate-950/80 border-t border-slate-800/50 flex gap-4">
+                <button className="flex-1 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black text-slate-300 uppercase tracking-widest hover:border-slate-700 transition-all">
+                  Dismiss Alert
+                </button>
+                <button className="flex-1 py-4 bg-teal-400 text-slate-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-teal-400/10">
+                  Execute Playbook
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const DRIFT_DATA = [
+  { time: '00:00', drift: 12, baseline: 15, alerts: 0 },
+  { time: '04:00', drift: 18, baseline: 15, alerts: 0 },
+  { time: '08:00', drift: 25, baseline: 18, alerts: 1 },
+  { time: '12:00', drift: 45, baseline: 20, alerts: 3 },
+  { time: '16:00', drift: 35, baseline: 22, alerts: 1 },
+  { time: '20:00', drift: 28, baseline: 20, alerts: 0 },
+  { time: '23:59', drift: 22, baseline: 18, alerts: 0 },
+];
+
+const BehavioralDriftView = () => {
+  const [sensitivity, setSensitivity] = useState(65);
+  const [viewHistorical, setViewHistorical] = useState(false);
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+    >
+      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+        <div className="space-y-2">
+          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Behavioral Drift Analysis</h2>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Monitoring systemic deviations from validated behavioral norms</p>
+        </div>
+        <div className="flex gap-4">
+           <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-2.5 flex items-center gap-8">
+              <div className="flex flex-col">
+                <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Active Drift</span>
+                <span className="text-xl font-light text-teal-400">Low (12.4%)</span>
+              </div>
+              <div className="h-8 w-px bg-slate-800" />
+              <div className="flex flex-col">
+                <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Anomalies Detected</span>
+                <span className="text-xl font-light text-rose-500">03</span>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-12 gap-8">
+        {/* Main Chart */}
+        <div className="col-span-12 lg:col-span-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between mb-10">
+              <div className="space-y-1">
+                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Drift Over Time</h3>
+                <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Real-time telemetry vs. moving average baseline</p>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setViewHistorical(false)}
+                  className={cn("px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", !viewHistorical ? "bg-teal-400 text-slate-950" : "bg-slate-950 text-slate-500 border border-slate-800")}
+                >
+                  24h Live
+                </button>
+                <button 
+                  onClick={() => setViewHistorical(true)}
+                  className={cn("px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all", viewHistorical ? "bg-teal-400 text-slate-950" : "bg-slate-950 text-slate-500 border border-slate-800")}
+                >
+                  7d History
+                </button>
+              </div>
+            </div>
+
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={DRIFT_DATA}>
+                  <defs>
+                    <linearGradient id="driftGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2dd4bf" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#2dd4bf" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#475569" 
+                    fontSize={9} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tick={{ fill: '#475569', fontWeight: 800 }}
+                  />
+                  <YAxis 
+                    stroke="#475569" 
+                    fontSize={9} 
+                    tickLine={false} 
+                    axisLine={false}
+                    tick={{ fill: '#475569', fontWeight: 800 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '12px' }}
+                    itemStyle={{ fontSize: '10px', textTransform: 'uppercase', fontWeight: 900 }}
+                    labelStyle={{ fontSize: '10px', fontWeight: 900, marginBottom: '4px', color: '#94a3b8' }}
+                  />
+                  <Area type="monotone" dataKey="drift" stroke="#2dd4bf" fillOpacity={1} fill="url(#driftGradient)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="baseline" stroke="#475569" strokeDasharray="5 5" fill="transparent" strokeWidth={1} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="mt-8 flex items-center gap-12 border-t border-slate-800 pt-8">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]" />
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Active Drift Telemetry</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full border border-slate-600 border-dashed" />
+                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Historical Baseline</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Configuration & Anomalies */}
+        <div className="col-span-12 lg:col-span-4 space-y-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl">
+            <h3 className="text-[11px] font-black text-white mb-8 uppercase tracking-[0.2em]">Detection Sensitivity</h3>
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                  <span className="text-slate-500">Threshold Level</span>
+                  <span className="text-teal-400">{sensitivity}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" max="100" 
+                  value={sensitivity}
+                  onChange={(e) => setSensitivity(parseInt(e.target.value))}
+                  className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-teal-400 border border-slate-800"
+                />
+                <div className="flex justify-between text-[8px] font-bold text-slate-600 uppercase tracking-tighter">
+                  <span>Permissive</span>
+                  <span>Strict (Restricted)</span>
+                </div>
+              </div>
+              <div className="p-4 bg-slate-950/50 border border-slate-800 rounded-xl space-y-3">
+                <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
+                  Higher sensitivity reduces <span className="text-teal-400">False Negatives</span> but may trigger more frequent container isolation.
+                </p>
+                <div className="flex items-center gap-2 text-[9px] text-teal-400 font-black uppercase tracking-widest">
+                  <Settings className="w-3 h-3" /> Auto-Tune Enabled
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-xl">
+            <h3 className="text-[11px] font-black text-white mb-8 uppercase tracking-[0.2em]">Recent Deviations</h3>
+            <div className="space-y-4">
+              {[
+                { time: '14:22', type: 'Latency Spike', drift: '+12%', status: 'Investigating' },
+                { time: '10:05', type: 'Token Density', drift: '+45%', status: 'Alerted' },
+                { time: '08:42', type: 'Prompt Length', drift: '+22%', status: 'Ignored' },
+              ].map((dev, i) => (
+                <div key={i} className="flex items-center justify-between p-4 bg-slate-950/30 border border-slate-800 rounded-xl group hover:border-slate-700 transition-all">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                       <span className="text-[9px] text-slate-600 font-mono">{dev.time}</span>
+                       <span className="text-[10px] font-bold text-slate-300 uppercase">{dev.type}</span>
+                    </div>
+                    <div className="text-[10px] font-black text-rose-500 uppercase tracking-widest">{dev.drift} Deviation</div>
+                  </div>
+                  <div className={cn("text-[9px] font-black uppercase px-2 py-1 rounded", dev.status === 'Alerted' ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-900 text-slate-500')}>
+                    {dev.status}
+                  </div>
+                </div>
+              ))}
+              <button className="w-full py-3 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hover:text-white transition-colors">
+                View Full Audit Log
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+  const ReportingView = () => {
+    const [dateRange, setDateRange] = useState('Last 7 Days');
+    const [eventTypes, setEventTypes] = useState<string[]>(['Malware', 'Prompt Injection']);
+    const [targetAssets, setTargetAssets] = useState('All Infrastructure');
+
+    const toggleEventType = (type: string) => {
+      setEventTypes(prev => 
+        prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+      );
+    };
+
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className="p-8 space-y-8 max-w-[1400px] mx-auto w-full"
+      >
+        <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+          <div className="space-y-2">
+            <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Security Reporting</h2>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Generate verifiable forensic exports and audit trail summaries</p>
+          </div>
+          <div className="flex gap-4">
+            <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-teal-400 hover:text-white transition-all group">
+              <FileText className="w-3.5 h-3.5" /> Export as PDF
+            </button>
+            <button className="flex items-center gap-2 bg-teal-400 text-slate-950 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-teal-400/10 active:scale-95">
+              <Archive className="w-3.5 h-3.5" /> Export CSV
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-12 gap-8">
+          {/* Report Filters */}
+          <div className="col-span-12 lg:col-span-4 space-y-8">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-8">
+              <div>
+                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+                  <Calendar className="w-3 h-3 text-teal-400" /> Date Range
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {['24h', 'Last 7 Days', '30 Days', 'Custom'].map((range) => (
+                    <button 
+                      key={range}
+                      onClick={() => setDateRange(range)}
+                      className={cn(
+                        "py-2.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all",
+                        dateRange === range 
+                          ? "bg-teal-400 border-teal-400 text-slate-950" 
+                          : "bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300"
+                      )}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-800/50" />
+
+              <div>
+                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+                  <ShieldAlert className="w-3 h-3 text-teal-400" /> Event Classifications
+                </h3>
+                <div className="space-y-2">
+                  {['Malware', 'Phishing', 'Unauthorized Access', 'Prompt Injection', 'PII Leak', 'Privilege Escalation'].map((type) => (
+                    <button 
+                      key={type}
+                      onClick={() => toggleEventType(type)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all",
+                        eventTypes.includes(type)
+                          ? "bg-teal-400/5 border-teal-400/30 text-teal-400"
+                          : "bg-slate-950/30 border-slate-800 text-slate-500 hover:border-slate-700"
+                      )}
+                    >
+                      {type}
+                      <div className={cn("w-3 h-3 rounded border flex items-center justify-center", eventTypes.includes(type) ? "border-teal-400 bg-teal-400" : "border-slate-700")}>
+                        {eventTypes.includes(type) && <div className="w-1.5 h-1.5 bg-slate-950 rounded-sm" />}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-800/50" />
+
+              <div>
+                <h3 className="text-[11px] font-black text-white uppercase tracking-[0.2em] mb-5 flex items-center gap-2">
+                  <Globe className="w-3 h-3 text-teal-400" /> Target Assets
+                </h3>
+                <select 
+                  value={targetAssets}
+                  onChange={(e) => setTargetAssets(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-[10px] font-bold text-slate-300 uppercase tracking-widest focus:outline-none focus:border-teal-400 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="All Infrastructure">All Infrastructure</option>
+                  <option value="LLM Gateway Nodes">LLM Gateway Nodes</option>
+                  <option value="Production Databases">Production Databases</option>
+                  <option value="Endpoint Fleet">Endpoint Fleet</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Report Preview */}
+          <div className="col-span-12 lg:col-span-8">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl relative min-h-[600px] flex flex-col">
+              <div className="absolute inset-x-0 top-0 h-[300px] bg-gradient-to-b from-teal-400/[0.03] to-transparent pointer-events-none" />
+              
+              <div className="p-10 border-b border-slate-800/50 flex justify-between items-start relative z-10">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-center">
+                      <Archive className="w-5 h-5 text-teal-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-light text-white uppercase tracking-tight">Security Incident Summary</h4>
+                      <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mt-1">Generated: May 18, 2025 at 14:30 EST</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-6 mt-6">
+                    <div className="px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg">
+                      <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">D_Range</p>
+                      <p className="text-[10px] text-teal-400 font-black uppercase tracking-wider">{dateRange}</p>
+                    </div>
+                    <div className="px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg">
+                      <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Classes</p>
+                      <p className="text-[10px] text-slate-300 font-black uppercase tracking-wider">{eventTypes.length} Selected</p>
+                    </div>
+                    <div className="px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg">
+                      <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Verdicts</p>
+                      <p className="text-[10px] text-amber-500 font-black uppercase tracking-wider">High Sensitivity</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-slate-950 border border-slate-800 p-5 rounded-2xl flex flex-col items-center">
+                   <div className="w-12 h-12 rounded-full border-2 border-teal-400/20 flex items-center justify-center mb-2">
+                      <span className="text-xs font-mono text-teal-400">99.9</span>
+                   </div>
+                   <p className="text-[8px] text-slate-500 font-black uppercase tracking-tighter">Confidence</p>
+                </div>
+              </div>
+
+              <div className="flex-1 p-10 space-y-10 relative z-10 overflow-y-auto max-h-[500px] scrollbar-hide">
+                <div className="grid grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <h5 className="text-[10px] font-black text-white uppercase tracking-[0.2em] border-b border-slate-800 pb-2">Threat Magnitude (24h)</h5>
+                    <div className="h-40">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart3 className="w-full h-full text-slate-800 opacity-20" />
+                        {/* Static Visual Representation */}
+                        <div className="flex items-end justify-between h-full px-4">
+                          {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
+                            <motion.div 
+                              key={i}
+                              initial={{ height: 0 }}
+                              animate={{ height: `${h}%` }}
+                              className="w-4 bg-teal-400/80 rounded-t-sm"
+                            />
+                          ))}
+                        </div>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <h5 className="text-[10px] font-black text-white uppercase tracking-[0.2em] border-b border-slate-800 pb-2">Geographical Distribution</h5>
+                    <div className="space-y-3">
+                      {[
+                        { country: 'North America', pct: 45, color: 'bg-teal-400' },
+                        { country: 'Europe (EU-West)', pct: 30, color: 'bg-cyan-400' },
+                        { country: 'Asia Pacific', pct: 15, color: 'bg-amber-400' },
+                        { country: 'Other', pct: 10, color: 'bg-slate-700' },
+                      ].map((item) => (
+                        <div key={item.country} className="space-y-1">
+                          <div className="flex justify-between text-[9px] font-bold text-slate-500 uppercase">
+                            <span>{item.country}</span>
+                            <span>{item.pct}%</span>
+                          </div>
+                          <div className="h-1 w-full bg-slate-950 rounded-full overflow-hidden">
+                            <div className={cn("h-full", item.color)} style={{ width: `${item.pct}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h5 className="text-[10px] font-black text-white uppercase tracking-[0.2em] border-b border-slate-800 pb-2">Significant Event Log Preview</h5>
+                  <div className="bg-slate-950/50 rounded-xl border border-slate-800/80 overflow-hidden">
+                    {[
+                      { ts: '12:44:02', event: 'Malicious API Signature Match', src: 'Gateway-02', score: '99.4' },
+                      { ts: '12:51:15', event: 'Prompt Injection Pattern Observed', src: 'Bedrock-01', score: '82.7' },
+                      { ts: '13:05:55', event: 'Identity Session Token Rotated', src: 'Auth-Node', score: 'N/A' },
+                      { ts: '14:22:10', event: 'Credential Spraying Attack Blocked', src: 'WAF-Alpha', score: '95.1' },
+                    ].map((row, idx) => (
+                      <div key={idx} className="flex items-center justify-between px-6 py-4 border-b border-slate-800/30 last:border-0 hover:bg-slate-950 transition-colors">
+                        <div className="flex gap-6 items-center">
+                          <span className="text-[9px] font-mono text-slate-600">{row.ts}</span>
+                          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-tight">{row.event}</span>
+                        </div>
+                        <div className="flex gap-6 items-center">
+                          <span className="text-[9px] text-slate-500 font-mono italic">{row.src}</span>
+                          <span className={cn("text-[10px] font-black", row.score === 'N/A' ? 'text-slate-700' : 'text-teal-400')}>{row.score}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 bg-slate-950/80 border-t border-slate-800/50 flex justify-between items-center text-[9px] font-black text-slate-600 uppercase tracking-[0.3em]">
+                <span>BASTION_SECURE_ENCLAVE_OUTPUT</span>
+                <span>VERIFY_KEY: ABX-992-K01</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
   const ComplianceView = () => (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -586,29 +1210,36 @@ export default function App() {
     >
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
-          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Compliance Status</h2>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Cross-framework regulatory alignment monitoring</p>
+          <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Compliance Oversight</h2>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Monitoring OSFI, SOC2, and PIPEDA regulatory alignment</p>
         </div>
         <div className="flex gap-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 flex items-center gap-4">
+             <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Market Alignment:</span>
+             <span className="text-[10px] text-teal-400 font-black uppercase tracking-widest">Toronto / Canada Financial</span>
+          </div>
           <button className="flex items-center gap-2 bg-slate-900 border border-slate-800 text-slate-300 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:border-teal-400/30 transition-all">
-            <Archive className="w-3.5 h-3.5" /> Download Report
+            <Archive className="w-3.5 h-3.5" /> Regulatory Export
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
-          { name: 'ISO-27001', score: 100, status: 'Compliant', date: 'Exp: Dec 2025' },
-          { name: 'SOC2 Type II', score: 98, status: 'Compliant', date: 'Review: 12d' },
-          { name: 'GDPR / AI Act', score: 85, status: 'Warning', date: 'Audit Pending' },
+          { name: 'OSFI E-21', score: 94, status: 'Compliant', date: 'Exp: Dec 2025', desc: 'Operational Risk Management for AI' },
+          { name: 'SOC2 Type II', score: 98, status: 'Compliant', date: 'Review: 12d', desc: 'Trust Services Criteria: AI Workloads' },
+          { name: 'PIPEDA / Bill C-27', score: 82, status: 'Warning', date: 'Audit Pending', desc: 'AI PII Protection & Data Sovereignty' },
         ].map((framework) => (
           <div key={framework.name} className="bg-slate-900 border border-slate-800 rounded-2xl p-8 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-3xl" />
-            <div className="flex justify-between items-start mb-6 relative z-10">
-              <h3 className="text-xl font-light text-white uppercase tracking-tight">{framework.name}</h3>
+            <div className="flex justify-between items-start mb-4 relative z-10">
+              <div>
+                <h3 className="text-xl font-light text-white uppercase tracking-tight">{framework.name}</h3>
+                <p className="text-[9px] text-slate-500 font-bold uppercase mt-1 tracking-wide">{framework.desc}</p>
+              </div>
               <CheckCircle2 className={cn("w-6 h-6", framework.status === 'Compliant' ? 'text-teal-400' : 'text-amber-400')} />
             </div>
-            <div className="space-y-4 relative z-10">
+            <div className="space-y-4 relative z-10 pt-4">
               <div className="flex justify-between items-end">
                 <span className="text-4xl font-light text-white">{framework.score}%</span>
                 <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{framework.date}</span>
@@ -617,7 +1248,7 @@ export default function App() {
                 <motion.div 
                   initial={{ width: 0 }}
                   animate={{ width: `${framework.score}%` }}
-                  className={cn("h-full", framework.score === 100 ? 'bg-teal-400' : 'bg-amber-400')}
+                  className={cn("h-full", framework.score >= 90 ? 'bg-teal-400' : 'bg-amber-400')}
                 />
               </div>
             </div>
@@ -629,10 +1260,13 @@ export default function App() {
 
   const DynamicView = () => {
     switch (activeTab) {
+      case 'threats': return <ThreatDetectionView />;
+      case 'drift': return <BehavioralDriftView />;
       case 'investigation': return <IncidentInvestigationView />;
       case 'inventory': return <RiskInventoryView />;
       case 'guardrails': return <GuardrailsView />;
       case 'compliance': return <ComplianceView />;
+      case 'reporting': return <ReportingView />;
       default: return (
 
         <motion.div 
@@ -890,6 +1524,9 @@ export default function App() {
                activeTab === 'inventory' ? 'Asset Inventory' : 
                activeTab === 'guardrails' ? 'Policy Guardrails' :
                activeTab === 'compliance' ? 'Compliance Oversight' :
+               activeTab === 'reporting' ? 'Security Reporting' :
+               activeTab === 'threats' ? 'Threat Detection Hub' :
+               activeTab === 'drift' ? 'Behavioral Drift Analysis' :
                'Incident Forensics'}
             </h2>
             <div className="h-4 w-px bg-slate-800 hidden md:block" />
@@ -910,11 +1547,20 @@ export default function App() {
           <div className="flex items-center gap-6">
             <div className="hidden lg:flex items-center gap-8 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
               <span onClick={() => setActiveTab('overview')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'overview' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Overview</span>
+              {ROLE_PERMISSIONS[userRole].includes('threats') && (
+                <span onClick={() => setActiveTab('threats')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'threats' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Threats</span>
+              )}
+              {ROLE_PERMISSIONS[userRole].includes('drift') && (
+                <span onClick={() => setActiveTab('drift')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'drift' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Drift</span>
+              )}
               {ROLE_PERMISSIONS[userRole].includes('guardrails') && (
                 <span onClick={() => setActiveTab('guardrails')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'guardrails' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Guardrails</span>
               )}
               {ROLE_PERMISSIONS[userRole].includes('inventory') && (
                 <span onClick={() => setActiveTab('inventory')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'inventory' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Risks</span>
+              )}
+              {ROLE_PERMISSIONS[userRole].includes('reporting') && (
+                <span onClick={() => setActiveTab('reporting')} className={cn("cursor-pointer py-5 transition-all", activeTab === 'reporting' ? "text-teal-400 border-b-2 border-teal-400" : "hover:text-slate-200")}>Reports</span>
               )}
             </div>
             
@@ -945,17 +1591,17 @@ export default function App() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.5)]"></div>
-              <span>System Status: Healthy</span>
+              <span>System Status: Optimal</span>
             </div>
             <span className="text-slate-800">|</span>
-            <span>Latency: 38ms</span>
+            <span>Region: Canada Central (Toronto)</span>
             <span className="text-slate-800">|</span>
-            <span>Uptime: 99.99%</span>
+            <span>Latency: 32ms</span>
           </div>
           <div className="flex gap-8">
-            <span className="hover:text-teal-400 cursor-pointer transition-colors">Audit Logs</span>
-            <span className="hover:text-teal-400 cursor-pointer transition-colors">API Docs</span>
-            <span className="text-teal-400/80">Compliance: ISO-27001</span>
+            <span className="hover:text-teal-400 cursor-pointer transition-colors">Forensic Vault</span>
+            <span className="hover:text-teal-400 cursor-pointer transition-colors">Strategic Hooks</span>
+            <span className="text-teal-400/80">Compliance: OSFI E-21</span>
           </div>
         </footer>
       </main>
