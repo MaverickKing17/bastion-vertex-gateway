@@ -35,7 +35,8 @@ import {
   TrendingDown,
   TrendingUp,
   Share2,
-  Calendar
+  Calendar,
+  Loader2
 } from 'lucide-react';
 import { 
   LineChart, 
@@ -624,6 +625,16 @@ const THREAT_ALERTS = [
 
 const ThreatDetectionView = () => {
   const [selectedAlert, setSelectedAlert] = useState(THREAT_ALERTS[0]);
+  const [triageStage, setTriageStage] = useState<'Detection' | 'Analysis' | 'Response'>('Detection');
+  const [isAutomating, setIsAutomating] = useState(false);
+
+  const handleAutomate = () => {
+    setIsAutomating(true);
+    setTimeout(() => {
+      setIsAutomating(false);
+      setTriageStage('Response');
+    }, 2000);
+  };
 
   return (
     <motion.div 
@@ -634,7 +645,7 @@ const ThreatDetectionView = () => {
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h2 className="text-4xl font-light text-white tracking-tight leading-none uppercase">Threat Detection Center</h2>
-          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Real-time autonomous monitoring and incident categorization</p>
+          <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">SOC-Aligned autonomous monitoring and incident triage</p>
         </div>
         <div className="flex gap-3">
            <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-2.5 flex items-center gap-6">
@@ -643,6 +654,13 @@ const ThreatDetectionView = () => {
                 <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Active Alerts</span>
               </div>
               <p className="text-xl font-light text-white">04</p>
+           </div>
+           <div className="bg-slate-900 border border-slate-800 rounded-xl px-5 py-2.5 flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Zap className="w-3.5 h-3.5 text-teal-400" />
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Auto-Triage</span>
+              </div>
+              <p className="text-xl font-light text-teal-400">ON</p>
            </div>
         </div>
       </div>
@@ -661,7 +679,10 @@ const ThreatDetectionView = () => {
           {THREAT_ALERTS.map((alert) => (
             <motion.div 
               key={alert.id}
-              onClick={() => setSelectedAlert(alert)}
+              onClick={() => {
+                setSelectedAlert(alert);
+                setTriageStage('Detection');
+              }}
               whileHover={{ x: 4 }}
               className={cn(
                 "p-6 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden",
@@ -718,7 +739,7 @@ const ThreatDetectionView = () => {
           ))}
         </div>
 
-        {/* Action Panel */}
+        {/* Structured Triage Panel */}
         <div className="col-span-12 xl:col-span-5 h-[700px]">
           <AnimatePresence mode="wait">
             <motion.div 
@@ -730,67 +751,135 @@ const ThreatDetectionView = () => {
             >
               <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-teal-400/[0.02] to-transparent pointer-events-none" />
               
-              <div className="p-10 border-b border-slate-800/50 relative z-10">
-                <div className="flex justify-between items-start mb-8">
+              <div className="p-8 border-b border-slate-800/50 relative z-10">
+                <div className="flex justify-between items-start mb-6">
                   <div className="space-y-1">
-                    <p className="text-[10px] text-teal-400 font-black uppercase tracking-[0.25em]">Actionable Insights</p>
-                    <h3 className="text-2xl font-light text-white tracking-tight leading-tight uppercase">Forensic Analysis</h3>
+                    <p className="text-[10px] text-teal-400 font-black uppercase tracking-[0.25em]">SOC Triage Workflow</p>
+                    <h3 className="text-2xl font-light text-white tracking-tight leading-tight uppercase">Incident {selectedAlert.id}</h3>
                   </div>
-                  <button className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-slate-500 hover:text-white transition-colors">
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="bg-slate-950/50 rounded-2xl border border-slate-800/80 p-6 space-y-4">
-                  <p className="text-xs text-slate-400 leading-relaxed italic font-medium">"{selectedAlert.desc}"</p>
-                </div>
-              </div>
-
-              <div className="flex-1 p-10 space-y-10 overflow-y-auto scrollbar-hide relative z-10">
-                <div className="space-y-6">
-                  <h5 className="text-[10px] font-black text-white uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Archive className="w-3.5 h-3.5 text-teal-400" /> Response Playbook
-                  </h5>
-                  <div className="space-y-3">
-                    {selectedAlert.insights.map((step, idx) => (
-                      <motion.div 
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        key={idx} 
-                        className="flex items-center gap-4 p-4 bg-slate-950/40 border border-slate-800/50 rounded-xl group hover:border-teal-400/30 transition-all"
-                      >
-                        <div className="w-6 h-6 rounded-lg bg-teal-400/5 border border-teal-400/20 flex items-center justify-center text-[10px] font-black text-teal-400 group-hover:bg-teal-400 group-hover:text-slate-950 transition-all">
-                          {idx + 1}
-                        </div>
-                        <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wide">{step}</span>
-                        <ChevronRight className="w-3 h-3 text-slate-700 ml-auto group-hover:text-teal-400 transition-colors" />
-                      </motion.div>
+                  <div className="flex gap-2">
+                    {['Detection', 'Analysis', 'Response'].map((stage) => (
+                      <div 
+                        key={stage}
+                        className={cn(
+                          "w-2 h-2 rounded-full transition-all duration-500",
+                          triageStage === stage ? "bg-teal-400 scale-125 shadow-[0_0_8px_rgba(45,212,191,0.5)]" : "bg-slate-800"
+                        )}
+                      />
                     ))}
                   </div>
                 </div>
 
-                <div className="h-px bg-slate-800" />
-
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Blast Radius</p>
-                    <div className="text-xl font-light text-white tracking-tight">Limited to Node_04</div>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest">Mean Time to Detection</p>
-                    <div className="text-xl font-light text-teal-400 tracking-tight">1.2 seconds</div>
-                  </div>
+                <div className="flex gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800/50">
+                  {['Detection', 'Analysis', 'Response'].map((stage) => (
+                    <button
+                      key={stage}
+                      onClick={() => setTriageStage(stage as any)}
+                      className={cn(
+                        "flex-1 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                        triageStage === stage ? "bg-slate-800 text-teal-400 shadow-inner" : "text-slate-600 hover:text-slate-400"
+                      )}
+                    >
+                      {stage}
+                    </button>
+                  ))}
                 </div>
               </div>
 
+              <div className="flex-1 p-8 space-y-8 overflow-y-auto scrollbar-hide relative z-10">
+                {triageStage === 'Detection' && (
+                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Identification Metadata</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-slate-950/40 border border-slate-800/50 rounded-xl">
+                          <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">Source Node</p>
+                          <p className="text-xs font-mono text-slate-300">{selectedAlert.target}</p>
+                        </div>
+                        <div className="p-4 bg-slate-950/40 border border-slate-800/50 rounded-xl">
+                          <p className="text-[8px] text-slate-600 font-black uppercase tracking-widest mb-1">Signature ID</p>
+                          <p className="text-xs font-mono text-slate-300">SIG-AI-{selectedAlert.id}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-6 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
+                      <p className="text-[9px] text-rose-500 font-black uppercase tracking-widest mb-2">Automated Risk Verdict</p>
+                      <p className="text-xs text-slate-300 leading-relaxed font-medium">System identifies high correlation between incoming prompt pattern and known recursive injection vectors. Behavioral drift confirmed at +14% deviation.</p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {triageStage === 'Analysis' && (
+                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Enrichment & Correlation</h4>
+                    <div className="space-y-3">
+                      {[
+                        { label: 'Identity Authenticity', score: 'Verified (mTLS)', color: 'text-teal-400' },
+                        { label: 'Asset Criticality', score: 'P1 - Revenue Path', color: 'text-rose-500' },
+                        { label: 'Data Sensitivity', score: 'Tier 3 (Regulated)', color: 'text-amber-500' },
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex justify-between items-center p-4 bg-slate-950/40 border border-slate-800/50 rounded-xl hover:border-slate-700 transition-all">
+                          <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{item.label}</span>
+                          <span className={cn("text-xs font-bold", item.color)}>{item.score}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 border-dashed">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Activity className="w-4 h-4 text-teal-400" />
+                        <span className="text-[10px] text-white font-black uppercase tracking-widest">Forensic Hook Output</span>
+                      </div>
+                      <div className="text-[9px] font-mono text-slate-500 space-y-1">
+                        <p>&gt; Fetching LLM execution trace...</p>
+                        <p>&gt; Correlating session {selectedAlert.id} with gateway-02...</p>
+                        <p>&gt; No horizontal PII movement detected.</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {triageStage === 'Response' && (
+                  <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Automated Playbook Execution</h4>
+                    <div className="space-y-3">
+                      {selectedAlert.insights.map((step, idx) => (
+                        <div key={idx} className="flex items-center gap-4 p-4 bg-slate-950/40 border border-teal-400/20 rounded-xl group">
+                          <div className="w-6 h-6 rounded-lg bg-teal-400 text-slate-950 flex items-center justify-center text-[10px] font-black">
+                            {idx + 1}
+                          </div>
+                          <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wide">{step}</span>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-teal-400 ml-auto" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 bg-teal-400/5 border border-teal-400/10 rounded-xl">
+                      <p className="text-[9px] text-teal-400 font-black uppercase tracking-widest flex items-center gap-2">
+                        <Shield className="w-3.5 h-3.5" /> Containment Status: ACTIVE
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+
               <div className="p-8 bg-slate-950/80 border-t border-slate-800/50 flex gap-4">
-                <button className="flex-1 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black text-slate-300 uppercase tracking-widest hover:border-slate-700 transition-all">
-                  Dismiss Alert
-                </button>
-                <button className="flex-1 py-4 bg-teal-400 text-slate-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-teal-400/10">
-                  Execute Playbook
-                </button>
+                {triageStage !== 'Response' ? (
+                  <button 
+                    onClick={handleAutomate}
+                    disabled={isAutomating}
+                    className="flex-1 py-4 bg-teal-400 text-slate-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all shadow-xl shadow-teal-400/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {isAutomating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Zap className="w-3.5 h-3.5" />
+                    )}
+                    {isAutomating ? 'Orchestrating Response...' : 'Automate SOC Playbook'}
+                  </button>
+                ) : (
+                  <button className="flex-1 py-4 bg-slate-900 border border-slate-800 rounded-2xl text-[10px] font-black text-teal-400 uppercase tracking-widest hover:border-teal-400/30 transition-all">
+                    Resolve Case & Archive
+                  </button>
+                )}
               </div>
             </motion.div>
           </AnimatePresence>
